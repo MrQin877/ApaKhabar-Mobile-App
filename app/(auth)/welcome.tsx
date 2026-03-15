@@ -1,206 +1,97 @@
-import React, { useEffect, useRef } from 'react';
+// ── Welcome Page ──
+import { router } from "expo-router";
+import React from "react";
 import {
-  View,
+  StatusBar,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-  Image,
-  Animated,
-  useWindowDimensions,
-  Platform,
-} from 'react-native';
-import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AuthButton } from "../../components/auth/AuthButton";
+import { AUTH_STRINGS } from "../../constants/authData";
+import { getTheme } from "../../constants/theme";
+import { useColorScheme } from "../../hooks/use-color-scheme";
 
 export default function WelcomeScreen() {
-  const { width, height } = useWindowDimensions(); // ✅ updates on rotate/resize
-  const insets = useSafeAreaInsets();              // ✅ handles notch & home bar
-
-  // Responsive scale helpers
-  const isSmall = height < 680;      // small phones e.g. iPhone SE
-  const isTall  = height > 850;      // large phones e.g. iPhone Pro Max
-
-  const fadeTop        = useRef(new Animated.Value(0)).current;
-  const translateTop   = useRef(new Animated.Value(-20)).current;
-  const fadeButtons    = useRef(new Animated.Value(0)).current;
-  const translateBtns  = useRef(new Animated.Value(30)).current;
-
-  useEffect(() => {
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(fadeTop,      { toValue: 1, duration: 500, useNativeDriver: true }),
-        Animated.timing(translateTop, { toValue: 0, duration: 500, useNativeDriver: true }),
-      ]),
-      Animated.parallel([
-        Animated.timing(fadeButtons,   { toValue: 1, duration: 400, useNativeDriver: true }),
-        Animated.timing(translateBtns, { toValue: 0, duration: 400, useNativeDriver: true }),
-      ]),
-    ]).start();
-  }, []);
-
-  // Dynamic values based on screen size
-  const logoSize       = width * 0.12;                         // 12% of screen width
-  const welcomeSize    = isSmall ? 26 : isTall ? 36 : 32;
-  const subtitleSize   = isSmall ? 12 : 14;
-  const btnPaddingV    = isSmall ? 13 : 16;
-  const btnFontSize    = isSmall ? 12 : 13;
-  const topPadding     = insets.top + (isSmall ? 24 : isTall ? 52 : 36);
-  const bottomPadding  = insets.bottom + (isSmall ? 20 : 32);
-  const sidePadding    = width * 0.08;                         // 8% of width
+  const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme();
+  const theme = getTheme(colorScheme);
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.background, paddingTop: insets.top },
+      ]}
+    >
+      <StatusBar
+        barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
+      />
 
-      {/* Diagonal green stripes — responsive positions */}
-      <View style={[styles.stripe, {
-        width: width * 0.07, height: height * 0.65,
-        top: -height * 0.12, left: width * 0.10,
-      }]} />
-      <View style={[styles.stripe, {
-        width: width * 0.04, height: height * 0.55,
-        top: -height * 0.08, left: width * 0.22,
-      }]} />
-      <View style={[styles.stripe, {
-        width: width * 0.07, height: height * 0.6,
-        bottom: -height * 0.12, right: width * 0.10,
-      }]} />
-      <View style={[styles.stripe, {
-        width: width * 0.04, height: height * 0.5,
-        bottom: -height * 0.08, right: width * 0.22,
-      }]} />
+      <View style={styles.content}>
+        <Text style={[styles.title, { color: theme.text }]}>
+          {AUTH_STRINGS.welcomeTitle}
+        </Text>
+        <Text style={[styles.subtitle, { color: theme.secondary }]}>
+          {AUTH_STRINGS.welcomeSubtitle}
+        </Text>
+      </View>
 
-      {/* TOP — branding */}
-      <Animated.View style={[
-        styles.topSection,
-        {
-          paddingTop: topPadding,
-          paddingHorizontal: sidePadding,
-          opacity: fadeTop,
-          transform: [{ translateY: translateTop }],
-        },
-      ]}>
-        <Image
-          source={require('../../assets/images/APAKHABAR_LOGO.png')}
-          style={{ width: logoSize, height: logoSize, marginBottom: height * 0.025 }}
-          resizeMode="contain"
+      <View style={styles.buttons}>
+        <AuthButton
+          title={AUTH_STRINGS.signIn}
+          onPress={() => router.push("/(auth)/login")}
         />
-        <Text style={[styles.welcome, { fontSize: welcomeSize, lineHeight: welcomeSize * 1.2 }]}>
-          Selamat Datang
-        </Text>
-        <Text style={[styles.subtitle, { fontSize: subtitleSize, marginTop: height * 0.012 }]}>
-          Portal berita & maklumat komuniti anda
-        </Text>
-      </Animated.View>
-
-      {/* SPACER — pushes buttons to bottom */}
-      <View style={{ flex: 1 }} />
-
-      {/* BOTTOM — buttons */}
-      <Animated.View style={[
-        styles.bottomSection,
-        {
-          paddingHorizontal: sidePadding,
-          paddingBottom: bottomPadding,
-          opacity: fadeButtons,
-          transform: [{ translateY: translateBtns }],
-        },
-      ]}>
-        {/* Primary — gradient filled */}
         <TouchableOpacity
-          onPress={() => router.push('/(auth)/login')}
-          activeOpacity={0.88}
+          style={[styles.secondaryButton, { borderColor: theme.primary }]}
+          onPress={() => router.push("/(auth)/register")}
+          activeOpacity={0.8}
         >
-          <LinearGradient
-            colors={['#3FCC54', '#00B99B']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[styles.primaryBtn, { paddingVertical: btnPaddingV, borderRadius: width * 0.03 }]}
-          >
-            <Text style={[styles.primaryBtnText, { fontSize: btnFontSize }]}>
-              LOG MASUK DENGAN EMAIL
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
-
-        {/* Secondary — outline */}
-        <TouchableOpacity
-          style={[
-            styles.secondaryBtn,
-            { paddingVertical: btnPaddingV - 1, borderRadius: width * 0.03, marginTop: height * 0.015 },
-          ]}
-          onPress={() => router.push('/(auth)/register' as any)}
-          activeOpacity={0.88}
-        >
-          <Text style={[styles.secondaryBtnText, { fontSize: btnFontSize }]}>
-            CIPTA AKAUN BARU
+          <Text style={[styles.secondaryText, { color: theme.primary }]}>
+            {AUTH_STRINGS.signUp}
           </Text>
         </TouchableOpacity>
-
-        {/* Text link */}
-        <TouchableOpacity
-          style={[styles.moreOptions, { marginTop: height * 0.022 }]}
-        >
-        </TouchableOpacity>
-      </Animated.View>
+      </View>
     </View>
   );
 }
 
-const STRIPE_COLOR = 'rgba(63, 204, 84, 0.07)';
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    paddingHorizontal: 24,
   },
-  stripe: {
-    position: 'absolute',
-    backgroundColor: STRIPE_COLOR,
-    borderRadius: 8,
-    transform: [{ rotate: '-35deg' }],
+  content: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  topSection: {
-    // paddingTop & paddingHorizontal set inline
-  },
-  welcome: {
-    fontWeight: '800',
-    color: '#1A2E27',
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 16,
   },
   subtitle: {
-    color: '#8AADA4',
-    lineHeight: 20,
+    fontSize: 16,
+    textAlign: "center",
+    opacity: 0.8,
   },
-  bottomSection: {
-    // padding set inline
+  buttons: {
+    marginBottom: 40,
   },
-  primaryBtn: {
-    alignItems: 'center',
+  secondaryButton: {
+    height: 50,
+    borderWidth: 1,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 12,
   },
-  primaryBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  secondaryBtn: {
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#3FCC54',
-  },
-  secondaryBtnText: {
-    color: '#3FCC54',
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  moreOptions: {
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  moreOptionsText: {
-    color: '#AABFBA',
-    fontWeight: '600',
-    letterSpacing: 1,
+  secondaryText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

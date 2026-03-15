@@ -1,4 +1,5 @@
-import { Stack } from 'expo-router';
+// ── Layout untuk halaman auth (welcome, login, register) ──
+import { Stack } from "expo-router";
 
 export default function AuthLayout() {
   return (
