@@ -52,7 +52,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await new Promise((res) => setTimeout(res, 1500));
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/news_content' as any);
     } catch (e) {
       console.error(e);
     } finally {
