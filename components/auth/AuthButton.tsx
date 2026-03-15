@@ -1,11 +1,12 @@
 // ── Reusable button component for authentication screens (login, register) ──
 import React from "react";
 import {
-    ActivityIndicator,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { getTheme } from "../../constants/theme";
 import { useColorScheme } from "../../hooks/use-color-scheme";
 
@@ -27,28 +28,30 @@ export function AuthButton({
 
   return (
     <TouchableOpacity
-      style={[
-        styles.button,
-        { backgroundColor: theme.primary },
-        (loading || disabled) && styles.disabled,
-      ]}
       onPress={onPress}
       disabled={loading || disabled}
-      activeOpacity={0.8}
+      activeOpacity={0.88}
     >
-      {loading ? (
-        <ActivityIndicator color="#fff" />
-      ) : (
-        <Text style={[styles.text, { color: "#fff" }]}>{title}</Text>
-      )}
+      <LinearGradient
+        colors={["#3FCC54", "#00B99B"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={[styles.button, (loading || disabled) && styles.disabled]}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.text}>{title}</Text>
+        )}
+      </LinearGradient>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    height: 50,
-    borderRadius: 8,
+    height: 54,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 16,
@@ -57,7 +60,9 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   text: {
-    fontSize: 16,
-    fontWeight: "600",
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 1.5,
   },
 });

@@ -1,28 +1,30 @@
-// ── Welcome Page ──
-import { router } from "expo-router";
 import React from "react";
-import {
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StatusBar, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { AuthButton } from "../../components/auth/AuthButton";
-import { AUTH_STRINGS } from "../../constants/authData";
+import { WelcomeActions } from "../../components/auth/WelcomeActions";
+import { WelcomeHeader } from "../../components/auth/WelcomeHeader";
 import { getTheme } from "../../constants/theme";
 import { useColorScheme } from "../../hooks/use-color-scheme";
+import { useWelcomeAnimations } from "../../hooks/useWelcomeAnimations";
+import { welcomeStyles } from "../../styles/welcome";
 
 export default function WelcomeScreen() {
+  const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
 
+  const isSmall = height < 680;
+  const sidePad = width * 0.07;
+
+  // Animations
+  const { fadeTop, translateY, fadeButtons, translateB } =
+    useWelcomeAnimations();
+
   return (
     <View
       style={[
-        styles.container,
+        welcomeStyles.container,
         { backgroundColor: theme.background, paddingTop: insets.top },
       ]}
     >
@@ -30,68 +32,50 @@ export default function WelcomeScreen() {
         barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
       />
 
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: theme.text }]}>
-          {AUTH_STRINGS.welcomeTitle}
-        </Text>
-        <Text style={[styles.subtitle, { color: theme.secondary }]}>
-          {AUTH_STRINGS.welcomeSubtitle}
-        </Text>
-      </View>
+      {/* ── Diagonal stripe decorations ── */}
+      <View
+        style={[
+          welcomeStyles.stripe,
+          {
+            width: width * 0.22,
+            height: height * 0.75,
+            top: -height * 0.12,
+            left: width * 0.18,
+          },
+        ]}
+      />
+      <View
+        style={[
+          welcomeStyles.stripe,
+          {
+            width: width * 0.12,
+            height: height * 0.65,
+            top: -height * 0.08,
+            left: width * 0.36,
+          },
+        ]}
+      />
 
-      <View style={styles.buttons}>
-        <AuthButton
-          title={AUTH_STRINGS.signIn}
-          onPress={() => router.push("/(auth)/login")}
-        />
-        <TouchableOpacity
-          style={[styles.secondaryButton, { borderColor: theme.primary }]}
-          onPress={() => router.push("/(auth)/register")}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.secondaryText, { color: theme.primary }]}>
-            {AUTH_STRINGS.signUp}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {/* ── Top content ── */}
+      <WelcomeHeader
+        width={width}
+        height={height}
+        sidePad={sidePad}
+        fadeTop={fadeTop}
+        translateY={translateY}
+      />
+
+      {/* ── Spacer ── */}
+      <View style={{ flex: 1 }} />
+
+      {/* ── Buttons ── */}
+      <WelcomeActions
+        width={width}
+        height={height}
+        sidePad={sidePad}
+        fadeButtons={fadeButtons}
+        translateB={translateB}
+      />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: "center",
-    opacity: 0.8,
-  },
-  buttons: {
-    marginBottom: 40,
-  },
-  secondaryButton: {
-    height: 50,
-    borderWidth: 1,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 12,
-  },
-  secondaryText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

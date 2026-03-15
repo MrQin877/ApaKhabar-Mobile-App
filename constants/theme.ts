@@ -16,7 +16,7 @@ export const Colors = {
     secondary: "#AABFBA",
     accent: "#F7FAF9",
     card: "#fff",
-    border: "#EDF3F1",
+    border: "#bdcbc6",
     error: "#E05252",
     warning: "#FEE8E8",
   },
