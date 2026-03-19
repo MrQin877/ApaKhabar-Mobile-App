@@ -36,7 +36,12 @@ export default function BeritaIndex() {
         backgroundColor={theme.card}
       />
 
-      <SearchBar search={search} onSearchChange={setSearch} theme={theme} />
+      <SearchBar
+        search={search}
+        onSearchChange={setSearch}
+        onFilterChange={(filter) => console.log('filter by:', filter)} // ← add this
+        theme={theme}
+      />
 
       <CategoryPills
         categories={categories}
