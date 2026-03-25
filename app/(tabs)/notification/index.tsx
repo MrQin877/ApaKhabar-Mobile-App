@@ -1,14 +1,54 @@
-import { View, Text, StyleSheet } from 'react-native';
+import {
+  NotifCard,
+  NotifFooter,
+  NotifHeader,
+  NotifMarkAllButton,
+  type Notification,
+} from "@/components/notification";
+import { INITIAL_NOTIFS } from "@/constants/notificationData";
+import { getTheme } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import React, { useState } from "react";
+import { FlatList, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-export default function Notifikasi() {
+export default function NotificationScreen() {
+  const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme();
+  const theme = getTheme(colorScheme);
+  const [notifs, setNotifs] = useState<Notification[]>(INITIAL_NOTIFS);
+
+  const unreadCount = notifs.filter((n) => !n.read).length;
+
+  const markRead = (id: string) => {
+    setNotifs((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
+  };
+
+  const markAllRead = () => {
+    setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Notifikasi</Text>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: theme.background,
+        paddingTop: insets.top,
+      }}
+    >
+      <NotifHeader unreadCount={unreadCount} />
+
+      <FlatList
+        data={notifs}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+        renderItem={({ item }) => <NotifCard item={item} onPress={markRead} />}
+        ListFooterComponent={<NotifFooter />}
+      />
+
+      {unreadCount > 0 && <NotifMarkAllButton onPress={markAllRead} />}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
-  text: { fontSize: 18, fontWeight: '600', color: '#1A2E27' },
-});
