@@ -6,12 +6,16 @@ import {
   type Notification,
 } from "@/components/notification";
 import { INITIAL_NOTIFS } from "@/constants/notificationData";
+import { getTheme } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import React, { useState } from "react";
 import { FlatList, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function NotificationScreen() {
   const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme();
+  const theme = getTheme(colorScheme);
   const [notifs, setNotifs] = useState<Notification[]>(INITIAL_NOTIFS);
 
   const unreadCount = notifs.filter((n) => !n.read).length;
@@ -27,7 +31,13 @@ export default function NotificationScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: theme.background,
+        paddingTop: insets.top,
+      }}
+    >
       <NotifHeader unreadCount={unreadCount} />
 
       <FlatList
