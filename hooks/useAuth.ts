@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import { VALIDATION_RULES } from "../constants/authData";
+import { login as apiLogin, register as apiRegister } from "../services/authService";
 
 export function useAuth() {
   const [email, setEmail] = useState("");
@@ -31,23 +32,18 @@ export function useAuth() {
   const login = async () => {
     const emailError = validateEmail(email);
     const passwordError = validatePassword(password);
-
     if (emailError || passwordError) {
       setErrors({ email: emailError, password: passwordError });
       return;
     }
-
     setLoading(true);
     setErrors({});
-
     try {
-      // TODO: Implement actual login API call
-      console.log("Login:", { email, password });
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await apiLogin(email, password); // ← calls Laravel /api/login
       router.replace("/(tabs)");
-    } catch (error) {
-      setErrors({ general: "Log masuk gagal" });
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "Log masuk gagal";
+      setErrors({ general: message });
     } finally {
       setLoading(false);
     }
@@ -57,7 +53,6 @@ export function useAuth() {
     const emailError = validateEmail(email);
     const passwordError = validatePassword(password);
     const confirmError = validateConfirmPassword(confirmPassword);
-
     if (emailError || passwordError || confirmError) {
       setErrors({
         email: emailError,
@@ -66,18 +61,14 @@ export function useAuth() {
       });
       return;
     }
-
     setLoading(true);
     setErrors({});
-
     try {
-      // TODO: Implement actual register API call
-      console.log("Register:", { email, password });
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await apiRegister(email, password, email); // ← calls Laravel /api/register
       router.replace("/(tabs)");
-    } catch (error) {
-      setErrors({ general: "Pendaftaran gagal" });
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "Pendaftaran gagal";
+      setErrors({ general: message });
     } finally {
       setLoading(false);
     }
