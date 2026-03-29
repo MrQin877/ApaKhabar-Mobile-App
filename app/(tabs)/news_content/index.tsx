@@ -1,5 +1,5 @@
 import React from "react";
-import { ScrollView, StatusBar, StyleSheet, View } from "react-native";
+import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AlertCard } from "../../../components/news/AlertCard";
 import { CategoryPills } from "../../../components/news/CategoryPills";
@@ -22,6 +22,8 @@ export default function BeritaIndex() {
     setSearch,
     filteredNews,
     categories,
+    loading,
+    error,
   } = useNews();
 
   return (
@@ -39,7 +41,7 @@ export default function BeritaIndex() {
       <SearchBar
         search={search}
         onSearchChange={setSearch}
-        onFilterChange={(filter) => console.log('filter by:', filter)} // ← add this
+        onFilterChange={(filter) => console.log('filter by:', filter)}
         theme={theme}
       />
 
@@ -50,23 +52,40 @@ export default function BeritaIndex() {
         theme={theme}
       />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <AlertCard message={ALERT.message} theme={theme} />
+      {/* Loading state */}
+      {loading && (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={theme.primary} />
+        </View>
+      )}
 
-        <FeaturedCard
-          id={FEATURED.id}
-          title={FEATURED.title}
-          category={FEATURED.category}
-          likes={FEATURED.likes}
-          comments={FEATURED.comments}
-          image={FEATURED.image}
-        />
+      {/* Error state */}
+      {error && !loading && (
+        <View style={styles.center}>
+          <Text style={{ color: 'red' }}>{error}</Text>
+        </View>
+      )}
 
-        <NewsList news={filteredNews} theme={theme} />
-      </ScrollView>
+      {/* Content */}
+      {!loading && !error && (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <AlertCard message={ALERT.message} theme={theme} />
+
+          <FeaturedCard
+            id={FEATURED.id}
+            title={FEATURED.title}
+            category={FEATURED.category}
+            likes={FEATURED.likes}
+            comments={FEATURED.comments}
+            image={FEATURED.image}
+          />
+
+          <NewsList news={filteredNews} theme={theme} />
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -79,5 +98,10 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 14,
     paddingBottom: 20,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
