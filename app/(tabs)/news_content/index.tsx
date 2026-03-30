@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";  // ← add useState, useEffect
 import {
   ActivityIndicator,
   ScrollView,
@@ -15,18 +15,25 @@ import { NewsList } from "../../../components/news/NewsList";
 import { SearchBar } from "../../../components/news/SearchBar";
 import { getTheme } from "../../../constants/theme";
 import { useColorScheme } from "../../../hooks/use-color-scheme";
-import { useNews } from "../../../hooks/useNews";
-
-// ── ALERT message — change or fetch from API if needed ──────────────────────
-const ALERT_MESSAGE = "Anda mempunyai 3 pemberitahuan baru";
+import { BASE_URL, useNews } from "../../../hooks/useNews";  // ← one import, both names
 
 export default function BeritaIndex() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
 
+  // ← moved INSIDE the component
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`${BASE_URL}/api/broadcasts/darurat`)
+      .then((r) => r.json())
+      .then((json) => setAlertMessage(json.message ?? null))
+      .catch(() => setAlertMessage(null));
+  }, []);
+
   const {
-    featuredNews,       // ← now dynamic from API (latest post)
+    featuredNews,
     filteredNews,
     categories,
     activeCategory,
@@ -63,29 +70,27 @@ export default function BeritaIndex() {
         theme={theme}
       />
 
-      {/* Loading */}
       {loading && (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.primary} />
         </View>
       )}
 
-      {/* Error */}
       {error && !loading && (
         <View style={styles.center}>
           <Text style={{ color: "red" }}>{error}</Text>
         </View>
       )}
 
-      {/* Content */}
       {!loading && !error && (
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          <AlertCard message={ALERT_MESSAGE} theme={theme} />
+          {alertMessage && (
+            <AlertCard message={alertMessage} theme={theme} />
+          )}
 
-          {/* FeaturedCard now gets data from API — only render when ready */}
           {featuredNews && (
             <FeaturedCard
               id={featuredNews.id}
@@ -97,7 +102,6 @@ export default function BeritaIndex() {
             />
           )}
 
-          {/* The rest of the news list (excluding featured) */}
           <NewsList news={filteredNews} theme={theme} />
         </ScrollView>
       )}
@@ -106,9 +110,7 @@ export default function BeritaIndex() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   scrollContent: {
     padding: 16,
     gap: 14,

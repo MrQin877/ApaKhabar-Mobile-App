@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center:    { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  heroWrap:  { width, height: 260 },
+  heroWrap:  { width: "100%", aspectRatio: 16 / 9 },
   heroImage: { width: "100%", height: "100%" },
   backBtn: {
     position: "absolute",
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  relatedImage: { width: 110, height: 90 },
+  relatedImage: { width: "35%", aspectRatio: 4 / 3 },
   relatedInfo:  { flex: 1, padding: 10, justifyContent: "space-between" },
   relatedTitle: { fontSize: 13, fontWeight: "600", lineHeight: 18 },
   relatedBadge: {
