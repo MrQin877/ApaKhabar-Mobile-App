@@ -2,8 +2,15 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
+const BASE_URL = Platform.select({
+  web:     'http://localhost:8000',
+  android: 'http://192.168.0.109:8000',
+  ios:     'http://192.168.0.109:8000',
+  default: 'http://localhost:8000',
+});
+
 const api = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL,
+  baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -14,12 +21,10 @@ api.interceptors.request.use(async (config: any) => {
   let token = null;
 
   if (Platform.OS === 'web') {
-    token = localStorage.getItem('auth_token');  // ← web uses localStorage
+    token = localStorage.getItem('auth_token');
   } else {
-    token = await SecureStore.getItemAsync('auth_token');  // ← mobile uses SecureStore
+    token = await SecureStore.getItemAsync('auth_token');
   }
-
-  console.log('Token being sent:', token ? 'EXISTS' : 'NULL');
 
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;

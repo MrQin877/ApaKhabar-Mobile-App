@@ -3,7 +3,7 @@ import api from './api';
 export const getNotifications = async () => {
   try {
     console.log('Fetching notifications...');
-    const response = await api.get('/notifications');
+    const response = await api.get('/api/notifications');
     console.log('Notifications response:', response.data);
     return response.data;
   } catch (error: any) {

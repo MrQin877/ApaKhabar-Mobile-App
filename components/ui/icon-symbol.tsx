@@ -38,6 +38,8 @@ const MAPPING = {
   // ── News / Search ─────────────────────────────────
   magnifyingglass: "search",
   "slider.horizontal.3": "tune",
+  "eye.fill":"visibility",
+  eye: "visibility",
 
   // ── Interactions ──────────────────────────────────
   "heart.fill": "favorite",
