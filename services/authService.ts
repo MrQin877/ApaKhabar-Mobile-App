@@ -23,13 +23,13 @@ const clearToken = async () => {
 };
 
 export const login = async (email: string, password: string) => {
-  const response = await api.post('/login', { email, password });
+  const response = await api.post('/api/login', { email, password });
   await saveToken(response.data.token, response.data.user);
   return response.data;
 };
 
 export const register = async (name: string, email: string, password: string) => {
-  const response = await api.post('/register', { name, email, password });
+  const response = await api.post('/api/register', { name, email, password });
   await saveToken(response.data.token, response.data.user);
   return response.data;
 };
