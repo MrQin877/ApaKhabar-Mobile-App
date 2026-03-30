@@ -1,27 +1,38 @@
 import React from "react";
-import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AlertCard } from "../../../components/news/AlertCard";
 import { CategoryPills } from "../../../components/news/CategoryPills";
 import { FeaturedCard } from "../../../components/news/FeaturedCard";
 import { NewsList } from "../../../components/news/NewsList";
 import { SearchBar } from "../../../components/news/SearchBar";
-import { ALERT, FEATURED } from "../../../constants/newsData";
 import { getTheme } from "../../../constants/theme";
 import { useColorScheme } from "../../../hooks/use-color-scheme";
 import { useNews } from "../../../hooks/useNews";
+
+// ── ALERT message — change or fetch from API if needed ──────────────────────
+const ALERT_MESSAGE = "Anda mempunyai 3 pemberitahuan baru";
 
 export default function BeritaIndex() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
+
   const {
+    featuredNews,       // ← now dynamic from API (latest post)
+    filteredNews,
+    categories,
     activeCategory,
     setActiveCategory,
     search,
     setSearch,
-    filteredNews,
-    categories,
     loading,
     error,
   } = useNews();
@@ -41,7 +52,7 @@ export default function BeritaIndex() {
       <SearchBar
         search={search}
         onSearchChange={setSearch}
-        onFilterChange={(filter) => console.log('filter by:', filter)}
+        onFilterChange={(filter) => console.log("filter by:", filter)}
         theme={theme}
       />
 
@@ -52,17 +63,17 @@ export default function BeritaIndex() {
         theme={theme}
       />
 
-      {/* Loading state */}
+      {/* Loading */}
       {loading && (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.primary} />
         </View>
       )}
 
-      {/* Error state */}
+      {/* Error */}
       {error && !loading && (
         <View style={styles.center}>
-          <Text style={{ color: 'red' }}>{error}</Text>
+          <Text style={{ color: "red" }}>{error}</Text>
         </View>
       )}
 
@@ -72,17 +83,21 @@ export default function BeritaIndex() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          <AlertCard message={ALERT.message} theme={theme} />
+          <AlertCard message={ALERT_MESSAGE} theme={theme} />
 
-          <FeaturedCard
-            id={FEATURED.id}
-            title={FEATURED.title}
-            category={FEATURED.category}
-            likes={FEATURED.likes}
-            comments={FEATURED.comments}
-            image={FEATURED.image}
-          />
+          {/* FeaturedCard now gets data from API — only render when ready */}
+          {featuredNews && (
+            <FeaturedCard
+              id={featuredNews.id}
+              title={featuredNews.title}
+              category={featuredNews.category}
+              likes={featuredNews.likes}
+              comments={featuredNews.comments}
+              image={featuredNews.image}
+            />
+          )}
 
+          {/* The rest of the news list (excluding featured) */}
           <NewsList news={filteredNews} theme={theme} />
         </ScrollView>
       )}
@@ -101,7 +116,7 @@ const styles = StyleSheet.create({
   },
   center: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
