@@ -147,12 +147,12 @@ export default function NewsDetailPage() {
 
           {/* Stats row — number on top, icon below, spread across ✅ */}
           <View style={[styles.statsRow, { borderColor: theme.border }]}>
-            <StatBox value={news.views}    icon="eye"         label="Tontonan" theme={theme} />
+            <StatBox value={news.views}    icon="eye.fill"          theme={theme} />
             <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
-            <StatBox value={news.likes}    icon="heart"       label="Suka"     theme={theme} />
+            <StatBox value={news.likes}    icon="heart.fill"        theme={theme} />
             <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
-            <StatBox value={news.comments} icon="bubble.left" label="Komen"    theme={theme} />
-          </View>
+            <StatBox value={news.comments} icon="bubble.left.fill"  theme={theme} />
+            </View>
 
           {/* Divider */}
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
@@ -211,19 +211,16 @@ export default function NewsDetailPage() {
 function StatBox({
   icon,
   value,
-  label,
   theme,
 }: {
   icon: string;
   value: number;
-  label: string;
   theme: ReturnType<typeof getTheme>;
 }) {
   return (
     <View style={styles.statBox}>
+      <IconSymbol name={icon as any} size={20} color={theme.primary} />
       <Text style={[styles.statValue, { color: theme.text }]}>{value}</Text>
-      <IconSymbol name={icon as any} size={18} color={theme.primary} />
-      <Text style={[styles.statLabel, { color: theme.secondary }]}>{label}</Text>
     </View>
   );
 }
@@ -289,7 +286,6 @@ const styles = StyleSheet.create({
     height: 36,
   },
   statValue: { fontSize: 16, fontWeight: "700" },
-  statLabel: { fontSize: 11 },
 
   divider: { height: 1, marginVertical: 4 },
 
