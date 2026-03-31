@@ -7,11 +7,26 @@ import {
 } from "@/components/notification";
 import { getTheme } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getNotifications, markAllRead, markRead } from "@/services/notificationService";
+import {
+  getNotifications,
+  markAllRead,
+  markRead,
+} from "@/services/notificationService";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+// List item types for FlatList
+type HeaderItem = { kind: "header"; date: string; key: string };
+type NotifItem = { kind: "notif"; data: Notification; key: string };
+type ListItem = HeaderItem | NotifItem;
 
 export default function NotificationScreen() {
   const insets = useSafeAreaInsets();
@@ -32,11 +47,19 @@ export default function NotificationScreen() {
       setLoading(true);
       setError(null);
       const data = await getNotifications();
-      const mapped = data.map((n: any) => ({
+      const mapped: Notification[] = data.map((n: any) => ({
         id: n.id,
-        type: n.type === 'darurat' ? 'emergency' : n.type === 'pengumuman' ? 'community' : 'info',
+        type:
+          n.type === "darurat"
+            ? "emergency"
+            : n.type === "pengumuman"
+              ? "community"
+              : "info",
         title: n.title,
+        message: n.message ?? "",
+        channel: n.channel ?? "Aplikasi",
         time: n.sent_at,
+        sent_at_full: n.sent_at_full ?? "",
         read: n.is_read,
       }));
       setNotifs(mapped);
@@ -51,7 +74,7 @@ export default function NotificationScreen() {
     try {
       await markRead(id);
       setNotifs((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
       );
     } catch (err) {
       console.error("Failed to mark as read", err);
@@ -67,8 +90,39 @@ export default function NotificationScreen() {
     }
   };
 
+  // Group by date then flatten into FlatList items
+  const flatList: ListItem[] = React.useMemo(() => {
+    const groups = notifs.reduce<Record<string, Notification[]>>((acc, n) => {
+      const date = n.sent_at_full ? n.sent_at_full.split(",")[0] : "Hari ini";
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(n);
+      return acc;
+    }, {});
+
+    return Object.entries(groups).flatMap(([date, items]) => [
+      { kind: "header", date, key: `header-${date}` },
+      ...items.map((n) => ({ kind: "notif" as const, data: n, key: n.id })),
+    ]);
+  }, [notifs]);
+
+  const renderItem = ({ item }: { item: ListItem }) => {
+    if (item.kind === "header") {
+      return (
+        <Text style={[styles.dateLabel, { color: theme.secondary }]}>
+          {item.date}
+        </Text>
+      );
+    }
+    return <NotifCard item={item.data} onPress={handleMarkRead} />;
+  };
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.background, paddingTop: insets.top },
+      ]}
+    >
       <NotifHeader unreadCount={unreadCount} />
 
       {/* Loading */}
@@ -84,16 +138,26 @@ export default function NotificationScreen() {
       {/* Error */}
       {error && !loading && (
         <View style={styles.center}>
-          <Ionicons name="cloud-offline-outline" size={48} color={theme.secondary} />
+          <Ionicons
+            name="cloud-offline-outline"
+            size={48}
+            color={theme.secondary}
+          />
           <Text style={[styles.emptyTitle, { color: theme.text }]}>Ralat</Text>
-          <Text style={[styles.emptyText, { color: theme.secondary }]}>{error}</Text>
+          <Text style={[styles.emptyText, { color: theme.secondary }]}>
+            {error}
+          </Text>
         </View>
       )}
 
-      {/* Empty state */}
+      {/* Empty */}
       {!loading && !error && notifs.length === 0 && (
         <View style={styles.center}>
-          <Ionicons name="notifications-off-outline" size={64} color={theme.secondary} />
+          <Ionicons
+            name="notifications-off-outline"
+            size={64}
+            color={theme.secondary}
+          />
           <Text style={[styles.emptyTitle, { color: theme.text }]}>
             Tiada Notifikasi
           </Text>
@@ -103,15 +167,13 @@ export default function NotificationScreen() {
         </View>
       )}
 
-      {/* Notification list */}
+      {/* List grouped by date */}
       {!loading && !error && notifs.length > 0 && (
         <FlatList
-          data={notifs}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
-          renderItem={({ item }) => (
-            <NotifCard item={item} onPress={handleMarkRead} />
-          )}
+          data={flatList}
+          keyExtractor={(item) => item.key}
+          contentContainerStyle={styles.listContent}
+          renderItem={renderItem}
           ListFooterComponent={<NotifFooter />}
         />
       )}
@@ -122,13 +184,22 @@ export default function NotificationScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+  dateLabel: {
+    fontSize: 11,
+    fontWeight: "500",
+    marginTop: 12,
+    marginBottom: 8,
+    letterSpacing: 0.3,
   },
   center: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 32,
     gap: 12,
   },
@@ -138,12 +209,12 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
+    fontWeight: "700",
+    textAlign: "center",
   },
   emptyText: {
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 22,
   },
 });
