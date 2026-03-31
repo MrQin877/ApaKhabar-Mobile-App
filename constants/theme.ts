@@ -19,6 +19,8 @@ export const Colors = {
     border: "#bdcbc6",
     error: "#E05252",
     warning: "#FEE8E8",
+    emergencyBg: "#FEE8E8",
+    communityBg: "#E8F8EC",
   },
   dark: {
     text: "#ECEDEE",
@@ -35,6 +37,8 @@ export const Colors = {
     border: "#3A3A3A",
     error: "#E05252",
     warning: "#3D2020",
+    emergencyBg: "#3D2020",
+    communityBg: "#1A2E1C",
   },
 };
 
