@@ -38,6 +38,8 @@ const MAPPING = {
   // ── News / Search ─────────────────────────────────
   magnifyingglass: "search",
   "slider.horizontal.3": "tune",
+  "eye.fill": "visibility",
+  eye: "visibility",
 
   // ── Interactions ──────────────────────────────────
   "heart.fill": "favorite",
@@ -53,6 +55,7 @@ const MAPPING = {
   "exclamationmark.triangle": "warning",
   "info.circle": "info",
   "checkmark.circle.fill": "check-circle",
+  "megaphone.fill": "campaign",
 
   // ── Auth & Profile ────────────────────────────────
   "lock.fill": "lock",

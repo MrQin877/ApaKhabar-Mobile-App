@@ -39,7 +39,7 @@ export function RegisterForm() {
       <AuthInput
         placeholder={AUTH_STRINGS.emailPlaceholder}
         value={email}
-        onChangeText={(text) => {
+        onChangeText={(text: string) => {
           setEmail(text);
           clearErrors();
         }}
@@ -49,7 +49,7 @@ export function RegisterForm() {
       <AuthInput
         placeholder={AUTH_STRINGS.passwordPlaceholder}
         value={password}
-        onChangeText={(text) => {
+        onChangeText={(text: string) => {
           setPassword(text);
           clearErrors();
         }}
@@ -60,7 +60,7 @@ export function RegisterForm() {
       <AuthInput
         placeholder={AUTH_STRINGS.confirmPasswordPlaceholder}
         value={confirmPassword}
-        onChangeText={(text) => {
+        onChangeText={(text: string) => {
           setConfirmPassword(text);
           clearErrors();
         }}

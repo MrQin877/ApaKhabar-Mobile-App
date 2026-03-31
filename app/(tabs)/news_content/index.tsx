@@ -1,7 +1,3 @@
-<<<<<<< Updated upstream
-import React from "react";
-import { ScrollView, StatusBar, StyleSheet, View } from "react-native";
-=======
 import api from "@/services/api";
 import React, { useEffect, useState } from "react";
 import {
@@ -12,19 +8,15 @@ import {
   Text,
   View,
 } from "react-native";
->>>>>>> Stashed changes
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AlertCard } from "../../../components/news/AlertCard";
 import { CategoryPills } from "../../../components/news/CategoryPills";
 import { FeaturedCard } from "../../../components/news/FeaturedCard";
 import { NewsList } from "../../../components/news/NewsList";
 import { SearchBar } from "../../../components/news/SearchBar";
-import { ALERT, FEATURED } from "../../../constants/newsData";
 import { getTheme } from "../../../constants/theme";
 import { useColorScheme } from "../../../hooks/use-color-scheme";
 import { useNews } from "../../../hooks/useNews";
-<<<<<<< Updated upstream
-=======
 
 const BULAN: Record<string, number> = {
   // English
@@ -88,14 +80,11 @@ function matchesFilter(
   }
   return true;
 }
->>>>>>> Stashed changes
 
 export default function BeritaIndex() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
-<<<<<<< Updated upstream
-=======
 
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<
@@ -109,18 +98,18 @@ export default function BeritaIndex() {
       .catch(() => setAlertMessage(null));
   }, []);
 
->>>>>>> Stashed changes
   const {
+    featuredNews,
+    filteredNews,
+    categories,
     activeCategory,
     setActiveCategory,
     search,
     setSearch,
-    filteredNews,
-    categories,
+    loading,
+    error,
   } = useNews();
 
-<<<<<<< Updated upstream
-=======
   const dateFilteredNews = filteredNews.filter((item) =>
     matchesFilter(item.date, dateFilter),
   );
@@ -129,7 +118,6 @@ export default function BeritaIndex() {
     ? matchesFilter(featuredNews.date ?? "", dateFilter)
     : false;
 
->>>>>>> Stashed changes
   return (
     <View
       style={[
@@ -145,7 +133,7 @@ export default function BeritaIndex() {
       <SearchBar
         search={search}
         onSearchChange={setSearch}
-        onFilterChange={(filter) => console.log('filter by:', filter)} // ← add this
+        onFilterChange={(filter) => setDateFilter(filter)}
         theme={theme}
       />
 
@@ -156,25 +144,18 @@ export default function BeritaIndex() {
         theme={theme}
       />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <AlertCard message={ALERT.message} theme={theme} />
+      {loading && (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={theme.primary} />
+        </View>
+      )}
 
-        <FeaturedCard
-          id={FEATURED.id}
-          title={FEATURED.title}
-          category={FEATURED.category}
-          likes={FEATURED.likes}
-          comments={FEATURED.comments}
-          image={FEATURED.image}
-        />
+      {error && !loading && (
+        <View style={styles.center}>
+          <Text style={{ color: "red" }}>{error}</Text>
+        </View>
+      )}
 
-<<<<<<< Updated upstream
-        <NewsList news={filteredNews} theme={theme} />
-      </ScrollView>
-=======
       {!loading && !error && (
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -196,24 +177,12 @@ export default function BeritaIndex() {
           <NewsList news={dateFilteredNews} theme={theme} />
         </ScrollView>
       )}
->>>>>>> Stashed changes
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-<<<<<<< Updated upstream
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    gap: 14,
-    paddingBottom: 20,
-  },
-=======
   container: { flex: 1 },
   scrollContent: { padding: 16, gap: 14, paddingBottom: 20 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
->>>>>>> Stashed changes
 });

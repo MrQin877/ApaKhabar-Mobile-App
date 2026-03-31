@@ -4,15 +4,6 @@ import {
   NotifHeader,
   type Notification,
 } from "@/components/notification";
-<<<<<<< Updated upstream
-import { INITIAL_NOTIFS } from "@/constants/notificationData";
-import { getTheme } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import React, { useState } from "react";
-import { FlatList, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-=======
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { getTheme } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -42,53 +33,22 @@ type HeaderItem = {
   key: string;
 };
 type NotifItem = { kind: "notif"; data: Notification; key: string };
-type EmergencyItem = { kind: "emergency"; data: Notification; key: string };
-type ListItem = HeaderItem | NotifItem | EmergencyItem;
+type ListItem = HeaderItem | NotifItem;
 
->>>>>>> Stashed changes
+const STALE_TIME = 5 * 60 * 1000;
+
 export default function NotificationScreen() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
-  const [notifs, setNotifs] = useState<Notification[]>(INITIAL_NOTIFS);
+  const [notifs, setNotifs] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const lastFetchRef = useRef<number>(0);
 
   const unreadCount = notifs.filter((n) => !n.read).length;
-
-<<<<<<< Updated upstream
-  const markRead = (id: string) => {
-    setNotifs((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-    );
-  };
-
-  const markAllRead = () => {
-    setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
-=======
-  // Separate emergency unread for banner
   const emergencyUnread = notifs.find((n) => n.type === "emergency" && !n.read);
-
-  const STALE_TIME = 5 * 60 * 1000; // 5 minutes
-  const lastFetchRef = useRef<number>(0);
-  const [refreshing, setRefreshing] = useState(false);
-
-  // Smart refetch on focus — only if stale
-  useFocusEffect(
-    useCallback(() => {
-      const now = Date.now();
-      if (now - lastFetchRef.current > STALE_TIME) {
-        fetchNotifications();
-        lastFetchRef.current = now;
-      }
-    }, []),
-  );
-
-  // Manual pull-to-refresh
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchNotifications();
-    lastFetchRef.current = Date.now();
-    setRefreshing(false);
-  };
 
   const fetchNotifications = async () => {
     try {
@@ -118,6 +78,23 @@ export default function NotificationScreen() {
     }
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      const now = Date.now();
+      if (now - lastFetchRef.current > STALE_TIME) {
+        fetchNotifications();
+        lastFetchRef.current = now;
+      }
+    }, []),
+  );
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchNotifications();
+    lastFetchRef.current = Date.now();
+    setRefreshing(false);
+  };
+
   const handleMarkRead = async (id: string) => {
     try {
       await markRead(id);
@@ -144,7 +121,6 @@ export default function NotificationScreen() {
     }
   };
 
-  // Group by date and build flat list
   const flatList = useMemo<ListItem[]>(() => {
     const groups = notifs.reduce<Record<string, Notification[]>>((acc, n) => {
       const date = n.sent_at_full?.split(",")[0] ?? "Hari ini";
@@ -186,7 +162,6 @@ export default function NotificationScreen() {
       );
     }
     return <NotifCard item={item.data} onPress={handleMarkRead} />;
->>>>>>> Stashed changes
   };
 
   return (
@@ -199,21 +174,6 @@ export default function NotificationScreen() {
     >
       <NotifHeader unreadCount={unreadCount} />
 
-<<<<<<< Updated upstream
-      <FlatList
-        data={notifs}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
-        renderItem={({ item }) => <NotifCard item={item} onPress={markRead} />}
-        ListFooterComponent={<NotifFooter />}
-      />
-
-      {unreadCount > 0 && <NotifMarkAllButton onPress={markAllRead} />}
-    </View>
-  );
-}
-=======
-      {/* Loading */}
       {loading && (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.primary} />
@@ -223,7 +183,6 @@ export default function NotificationScreen() {
         </View>
       )}
 
-      {/* Error */}
       {error && !loading && (
         <View style={styles.center}>
           <Ionicons
@@ -246,7 +205,6 @@ export default function NotificationScreen() {
         </View>
       )}
 
-      {/* Empty */}
       {!loading && !error && notifs.length === 0 && (
         <View style={styles.center}>
           <Ionicons
@@ -263,7 +221,6 @@ export default function NotificationScreen() {
         </View>
       )}
 
-      {/* List */}
       {!loading && !error && notifs.length > 0 && (
         <FlatList
           data={flatList}
@@ -274,12 +231,11 @@ export default function NotificationScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={theme.primary} // iOS spinner color
-              colors={[theme.primary]} // Android spinner color
+              tintColor={theme.primary}
+              colors={[theme.primary]}
             />
           }
           ListHeaderComponent={
-            // Emergency pinned banner
             emergencyUnread ? (
               <TouchableOpacity
                 activeOpacity={0.8}
@@ -319,11 +275,7 @@ export default function NotificationScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-  },
+  listContent: { paddingHorizontal: 16, paddingBottom: 32 },
   sectionRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -331,14 +283,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 6,
   },
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  markReadBtn: {
-    fontSize: 11,
-    fontWeight: "600",
-  },
+  sectionLabel: { fontSize: 13, fontWeight: "700" },
+  markReadBtn: { fontSize: 11, fontWeight: "600" },
   emergencyBanner: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -357,15 +303,8 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   emergencyContent: { flex: 1 },
-  emergencyTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    marginBottom: 2,
-  },
-  emergencyText: {
-    fontSize: 12,
-    lineHeight: 17,
-  },
+  emergencyTitle: { fontSize: 12, fontWeight: "700", marginBottom: 2 },
+  emergencyText: { fontSize: 12, lineHeight: 17 },
   center: {
     flex: 1,
     justifyContent: "center",
@@ -384,4 +323,3 @@ const styles = StyleSheet.create({
   },
   retryText: { fontSize: 13, fontWeight: "600" },
 });
->>>>>>> Stashed changes

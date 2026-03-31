@@ -11,42 +11,16 @@ export interface Notification {
   id: string;
   type: NotifType;
   title: string;
+  message: string;
+  channel: string;
   time: string;
+  sent_at_full: string;
   read: boolean;
 }
 
 const TYPE_CONFIG: Record<
   NotifType,
   {
-<<<<<<< Updated upstream
-    accentColor: string;
-    bgDark: string;
-    bgLight: string;
-    icon: SFSymbol;
-    iconColor: string;
-  }
-> = {
-  community: {
-    accentColor: "#3FCC54",
-    bgLight: "#ffffff",
-    bgDark: "#2A2A2A",
-    icon: "megaphone.fill",
-    iconColor: "#3FCC54",
-  },
-  emergency: {
-    accentColor: "#E05252",
-    bgLight: "#FEE8E8",
-    bgDark: "#3D2020",
-    icon: "exclamationmark.triangle.fill",
-    iconColor: "#E05252",
-  },
-  info: {
-    accentColor: "#3FCC54",
-    bgLight: "#ffffff",
-    bgDark: "#2A2A2A",
-    icon: "megaphone.fill",
-    iconColor: "#3FCC54",
-=======
     icon: SFSymbol;
     iconColor: string;
     iconBg: string;
@@ -66,7 +40,6 @@ const TYPE_CONFIG: Record<
     icon: "megaphone.fill",
     iconColor: "#3FCC54",
     iconBg: "#E8F8EC",
->>>>>>> Stashed changes
   },
 };
 
@@ -80,42 +53,6 @@ export function NotifCard({ item, onPress }: NotifCardProps) {
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
   const cfg = TYPE_CONFIG[item.type];
-<<<<<<< Updated upstream
-  const bgColor = colorScheme === "dark" ? cfg.bgDark : cfg.bgLight;
-
-  return (
-    <TouchableOpacity
-      onPress={() => onPress(item.id)}
-      activeOpacity={0.8}
-      style={[styles.card, { borderColor: theme.border }]}
-    >
-      {/* Left accent bar */}
-      <View style={[styles.accent, { backgroundColor: cfg.accentColor }]} />
-
-      {/* Card body */}
-      <View style={[styles.body, { backgroundColor: bgColor }]}>
-        {/* Icon bubble */}
-        <View style={[styles.iconBubble, { backgroundColor: theme.accent }]}>
-          <IconSymbol name={cfg.icon} size={20} color={cfg.iconColor} />
-        </View>
-
-        {/* Title */}
-        <View style={styles.textContainer}>
-          <Text
-            style={[
-              styles.title,
-              { color: theme.text, fontWeight: item.read ? "400" : "600" },
-            ]}
-          >
-            {item.title}
-          </Text>
-        </View>
-
-        {/* Time */}
-        <Text style={[styles.time, { color: theme.secondary }]}>
-          {item.time}
-        </Text>
-=======
 
   const handlePress = () => {
     if (!item.read) onPress(item.id);
@@ -142,7 +79,7 @@ export function NotifCard({ item, onPress }: NotifCardProps) {
         styles.item,
         {
           borderBottomColor: theme.border,
-          opacity: item.read ? 0.7 : 1,
+          opacity: item.read ? 0.45 : 1,
         },
       ]}
     >
@@ -156,7 +93,6 @@ export function NotifCard({ item, onPress }: NotifCardProps) {
             style={[styles.unreadDot, { backgroundColor: theme.primary }]}
           />
         )}
->>>>>>> Stashed changes
       </View>
 
       {/* Content */}
@@ -179,46 +115,6 @@ export function NotifCard({ item, onPress }: NotifCardProps) {
 }
 
 const styles = StyleSheet.create({
-<<<<<<< Updated upstream
-  card: {
-    flexDirection: "row",
-    alignItems: "stretch",
-    marginBottom: 12,
-    borderRadius: 12,
-    overflow: "hidden",
-    borderWidth: 1,
-  },
-  accent: {
-    width: 6,
-  },
-  body: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  iconBubble: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  textContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  time: {
-    fontSize: 12,
-    alignSelf: "flex-start",
-    paddingTop: 2,
-    marginLeft: 4,
-=======
   item: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -262,6 +158,5 @@ const styles = StyleSheet.create({
   time: {
     fontSize: 10,
     fontWeight: "500",
->>>>>>> Stashed changes
   },
 });

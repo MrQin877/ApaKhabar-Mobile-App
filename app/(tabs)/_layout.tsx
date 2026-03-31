@@ -37,6 +37,7 @@ export default function TabLayout() {
         },
       }}
     >
+      {/* ── Visible tabs ── */}
       <Tabs.Screen
         name="news_content/index"
         options={{
@@ -90,9 +91,6 @@ export default function TabLayout() {
           ),
         }}
       />
-<<<<<<< Updated upstream
-      <Tabs.Screen name="index" options={{ href: null }} />
-=======
 
       {/* ── Hidden screens ── */}
       <Tabs.Screen name="index" options={{ href: null }} />
@@ -103,7 +101,6 @@ export default function TabLayout() {
           tabBarStyle: { display: "none" },
         }}
       />
->>>>>>> Stashed changes
     </Tabs>
   );
 }

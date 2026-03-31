@@ -25,6 +25,15 @@ const clearToken = async () => {
 export const login = async (email: string, password: string) => {
   const response = await api.post("/login", { email, password });
   await saveToken(response.data.token, response.data.user);
+
+  // 🔍 DEBUG
+  console.log(
+    "[AUTH] ✅ Login OK |",
+    response.data.user?.email,
+    "| role:",
+    response.data.user?.role,
+  );
+
   return response.data;
 };
 
@@ -35,12 +44,26 @@ export const register = async (
 ) => {
   const response = await api.post("/register", { name, email, password });
   await saveToken(response.data.token, response.data.user);
+
+  // 🔍 DEBUG
+  console.log("[AUTH] ✅ Register OK |", response.data.user?.email);
+
   return response.data;
 };
 
 export const logout = async () => {
-  await api.post("/logout");
-  await clearToken();
+  try {
+    await api.post("/logout");
+    console.log("[AUTH] ✅ Logout OK | token deleted from server");
+  } catch (err: any) {
+    console.warn(
+      "[AUTH] ⚠️ Logout API fail |",
+      err?.response?.status ?? err?.message,
+    );
+  } finally {
+    await clearToken();
+    console.log("[AUTH] 🧹 Local token cleared");
+  }
 };
 
 export const getUser = async () => {
@@ -58,5 +81,43 @@ export const getToken = async () => {
     return localStorage.getItem("auth_token");
   } else {
     return await SecureStore.getItemAsync("auth_token");
+  }
+};
+
+export const forgotPassword = async (email: string) => {
+  try {
+    const response = await api.post("/forgot-password", { email });
+    console.log("[AUTH] ✅ Reset link sent |", email);
+    return response.data;
+  } catch (err: any) {
+    console.warn(
+      "[AUTH] ⚠️ Forgot password fail |",
+      err?.response?.status ?? err?.message,
+    );
+    throw err;
+  }
+};
+
+export const resetPassword = async (
+  token: string,
+  email: string,
+  password: string,
+  password_confirmation: string,
+) => {
+  try {
+    const response = await api.post("/api/reset-password", {
+      token,
+      email,
+      password,
+      password_confirmation,
+    });
+    console.log("[AUTH] ✅ Password reset OK |", email);
+    return response.data;
+  } catch (err: any) {
+    console.warn(
+      "[AUTH] ⚠️ Reset password fail |",
+      err?.response?.status ?? err?.message,
+    );
+    throw err;
   }
 };

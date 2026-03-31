@@ -1,12 +1,6 @@
-<<<<<<< Updated upstream
-import { useMemo, useState } from "react";
-import { CATEGORIES, NEWS } from "../constants/newsData";
-
-=======
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import api from "../services/api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 export interface NewsItem {
   id: string;
   title: string;
@@ -19,49 +13,57 @@ export interface NewsItem {
   body?: string;
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
->>>>>>> Stashed changes
 export function useNews() {
+  const [allNews, setAllNews] = useState<NewsItem[]>([]);
+  const [featuredNews, setFeaturedNews] = useState<NewsItem | null>(null);
+  const [categories, setCategories] = useState<string[]>(["Semua"]);
   const [activeCategory, setActiveCategory] = useState("Semua");
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-<<<<<<< Updated upstream
-  const filteredNews = useMemo(() => {
-    return NEWS.filter((n) => {
-      const matchCat =
-        activeCategory === "Semua" || n.category === activeCategory;
-      const matchSearch = n.title.toLowerCase().includes(search.toLowerCase());
-      return matchCat && matchSearch;
-    });
-  }, [activeCategory, search]);
-
-  return {
-=======
-  useEffect(() => {
-    setLoading(true);
+  const fetchNews = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
 
-    api
-      .get("/news")
-      .then((res) => {
-        const news: NewsItem[] = res.data?.data ?? res.data;
+    try {
+      const res = await api.get("/news");
+      const news: NewsItem[] = res.data?.data ?? res.data;
 
-        if (news.length === 0) {
-          setAllNews([]);
-          setFeaturedNews(null);
-          return;
-        }
+      if (news.length === 0) {
+        setAllNews([]);
+        setFeaturedNews(null);
+        return;
+      }
 
-        const [latest, ...rest] = news;
-        setFeaturedNews(latest);
-        setAllNews(rest);
+      const [latest, ...rest] = news;
+      setFeaturedNews(latest);
+      setAllNews(rest);
 
-        const unique = Array.from(new Set(news.map((n) => n.category)));
-        setCategories(["Semua", ...unique]);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      const unique = Array.from(new Set(news.map((n) => n.category)));
+      setCategories(["Semua", ...unique]);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchNews();
+  }, [fetchNews]);
+
+  // Pull-to-refresh handler
+  const handleRefresh = useCallback(() => {
+    fetchNews(true);
+  }, [fetchNews]);
 
   const filteredNews = allNews.filter((item) => {
     const matchCategory =
@@ -74,12 +76,13 @@ export function useNews() {
     featuredNews,
     filteredNews,
     categories,
->>>>>>> Stashed changes
     activeCategory,
     setActiveCategory,
     search,
     setSearch,
-    filteredNews,
-    categories: CATEGORIES,
+    loading,
+    refreshing,
+    error,
+    handleRefresh,
   };
 }
