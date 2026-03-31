@@ -71,3 +71,35 @@ export const getToken = async () => {
     return await SecureStore.getItemAsync('auth_token');
   }
 };
+
+export const forgotPassword = async (email: string) => {
+  try {
+    const response = await api.post('/api/forgot-password', { email });
+    console.log('[AUTH] ✅ Reset link sent |', email);
+    return response.data;
+  } catch (err: any) {
+    console.warn('[AUTH] ⚠️ Forgot password fail |', err?.response?.status ?? err?.message);
+    throw err;
+  }
+};
+
+export const resetPassword = async (
+  token: string,
+  email: string,
+  password: string,
+  password_confirmation: string
+) => {
+  try {
+    const response = await api.post('/api/reset-password', {
+      token,
+      email,
+      password,
+      password_confirmation,
+    });
+    console.log('[AUTH] ✅ Password reset OK |', email);
+    return response.data;
+  } catch (err: any) {
+    console.warn('[AUTH] ⚠️ Reset password fail |', err?.response?.status ?? err?.message);
+    throw err;
+  }
+};

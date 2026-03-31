@@ -1,13 +1,12 @@
-// ── Login form component for the login screen ──
-import { router } from "expo-router";
-import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { AUTH_STRINGS } from "../../constants/authData";
-import { getTheme } from "../../constants/theme";
-import { useColorScheme } from "../../hooks/use-color-scheme";
-import { useAuth } from "../../hooks/useAuth";
-import { AuthButton } from "./AuthButton";
-import { AuthInput } from "./AuthInput";
+import { router } from 'expo-router';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AUTH_STRINGS } from '../../constants/authData';
+import { getTheme } from '../../constants/theme';
+import { useColorScheme } from '../../hooks/use-color-scheme';
+import { useAuth } from '../../hooks/useAuth';
+import { AuthButton } from './AuthButton';
+import { AuthInput } from './AuthInput';
 
 export function LoginForm() {
   const colorScheme = useColorScheme();
@@ -37,7 +36,7 @@ export function LoginForm() {
       <AuthInput
         placeholder={AUTH_STRINGS.emailPlaceholder}
         value={email}
-        onChangeText={(text) => {
+        onChangeText={(text: string) => {
           setEmail(text);
           clearErrors();
         }}
@@ -47,7 +46,7 @@ export function LoginForm() {
       <AuthInput
         placeholder={AUTH_STRINGS.passwordPlaceholder}
         value={password}
-        onChangeText={(text) => {
+        onChangeText={(text: string) => {
           setPassword(text);
           clearErrors();
         }}
@@ -67,7 +66,11 @@ export function LoginForm() {
         loading={loading}
       />
 
-      <TouchableOpacity style={styles.link}>
+      {/* ✅ Wired to forgot password screen */}
+      <TouchableOpacity
+        style={styles.link}
+        onPress={() => router.push('/(auth)/forgot-password')}
+      >
         <Text style={[styles.linkText, { color: theme.primary }]}>
           {AUTH_STRINGS.forgotPassword}
         </Text>
@@ -75,9 +78,9 @@ export function LoginForm() {
 
       <View style={styles.footer}>
         <Text style={[styles.footerText, { color: theme.secondary }]}>
-          {AUTH_STRINGS.noAccount}{" "}
+          {AUTH_STRINGS.noAccount}{' '}
         </Text>
-        <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
+        <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
           <Text style={[styles.linkText, { color: theme.primary }]}>
             {AUTH_STRINGS.signUp}
           </Text>
@@ -91,30 +94,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
+    fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 32,
   },
   error: {
-    textAlign: "center",
+    textAlign: 'center',
     marginBottom: 16,
     fontSize: 14,
   },
   link: {
-    alignSelf: "center",
+    alignSelf: 'center',
     marginTop: 16,
   },
   linkText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   footer: {
-    flexDirection: "row",
-    justifyContent: "center",
+    flexDirection: 'row',
+    justifyContent: 'center',
     marginTop: 24,
   },
   footerText: {
