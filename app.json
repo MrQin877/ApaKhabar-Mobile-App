@@ -46,6 +46,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "9e790a98-e32b-41d7-afc9-4c4aa3eb07a6"
+      }
+    },
+    "owner": "apakhabar"
   }
 }

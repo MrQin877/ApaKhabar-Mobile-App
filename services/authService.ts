@@ -1,6 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import api from "./api";
+import { registerPushToken } from "./pushToken";
 
 const saveToken = async (token: string, user: any) => {
   if (Platform.OS === "web") {
@@ -25,6 +26,7 @@ const clearToken = async () => {
 export const login = async (email: string, password: string) => {
   const response = await api.post("/login", { email, password });
   await saveToken(response.data.token, response.data.user);
+  await registerPushToken(); // ← add here
 
   // 🔍 DEBUG
   console.log(
