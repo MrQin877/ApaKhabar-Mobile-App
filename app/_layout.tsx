@@ -1,5 +1,10 @@
-import { Slot } from "expo-router";
+import { Slot } from 'expo-router';
+import { AppearanceProvider } from '../context/AppearanceContext';
 
 export default function RootLayout() {
-  return <Slot />;
+  return (
+    <AppearanceProvider>
+      <Slot />
+    </AppearanceProvider>
+  );
 }

@@ -1,6 +1,6 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { getTheme } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useColorScheme } from "../../../hooks/use-color-scheme";
 import { markRead } from "@/services/notificationService";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { SFSymbol } from "expo-symbols";
@@ -54,11 +54,6 @@ const TYPE_CONFIG: Record<
   },
 };
 
-const router = useRouter();
-
-const handleBack = () => {
-  router.back();
-};
 
 export default function NotificationDetailScreen() {
   const router = useRouter();
@@ -97,7 +92,7 @@ export default function NotificationDetailScreen() {
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <TouchableOpacity
-          onPress={handleBack}
+          onPress={() => router.back()}
           style={styles.backBtn}
           activeOpacity={0.7}
         >

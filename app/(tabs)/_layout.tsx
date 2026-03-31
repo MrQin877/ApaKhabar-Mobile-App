@@ -39,6 +39,7 @@ export default function TabLayout() {
     >
       {/* ── Visible tabs ── */}
       <Tabs.Screen
+        key={colorScheme}
         name="news_content/index"
         options={{
           title: "Berita",

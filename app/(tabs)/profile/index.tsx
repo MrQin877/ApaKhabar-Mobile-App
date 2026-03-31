@@ -10,6 +10,7 @@ import { router } from 'expo-router';
 import { getUser, logout } from '../../../services/authService';
 import { getTheme } from '../../../constants/theme';
 import { useColorScheme } from '../../../hooks/use-color-scheme';
+import { useAppearance } from '../../../context/AppearanceContext';
 
 type AppearanceOption = 'system' | 'light' | 'dark';
 
@@ -26,7 +27,7 @@ export default function Profil() {
 
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [appearance, setAppearance] = useState<AppearanceOption>('system');
+  const { appearance, setAppearance } = useAppearance();
   const [modalVisible, setModalVisible] = useState(false);
 
   const overlayAnim = useRef(new Animated.Value(0)).current;
@@ -165,7 +166,11 @@ export default function Profil() {
 
           </View>
 
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={[styles.logoutBtn, { backgroundColor: colorScheme === 'dark' ? '#3D2020' : '#FFF0F0' }]}
+            onPress={handleLogout}
+            activeOpacity={0.85}
+          >
             <Ionicons name="log-out-outline" size={20} color="#E05252" />
             <Text style={styles.logoutText}>Keluar dari Akun</Text>
           </TouchableOpacity>
@@ -259,11 +264,10 @@ const styles = StyleSheet.create({
   badge: { backgroundColor: '#EEF9F1', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3, marginRight: 6 },
   badgeText: { fontSize: 12, fontWeight: '600', color: '#3FCC54' },
 
-  // ── Logout ──
+  // ── Logout ──   ← ADD THESE TWO
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 10, backgroundColor: '#FFF0F0', borderRadius: 30,
-    borderWidth: 1.5, borderColor: '#E05252', paddingVertical: 16,
+    gap: 10, borderRadius: 30, borderWidth: 1.5, borderColor: '#E05252', paddingVertical: 16,
   },
   logoutText: { color: '#E05252', fontSize: 14, fontWeight: '600' },
 
