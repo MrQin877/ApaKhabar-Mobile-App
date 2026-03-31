@@ -5,31 +5,37 @@ import { IconSymbol } from "../../components/ui/icon-symbol";
 import { getTheme } from "../../constants/theme";
 import { useColorScheme } from "../../hooks/use-color-scheme";
 
+// Screens where tab bar should be hidden
+const HIDDEN_SCREENS = ["[id]", "change-email", "change-phone", "change-password", "data-privacy"];
+
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
 
+  const tabBarStyle = {
+        backgroundColor: theme.card,
+        borderTopWidth: 1,
+        borderTopColor: theme.border,
+        height: 60 + insets.bottom,
+        paddingBottom: insets.bottom,
+        paddingTop: 6,
+        elevation: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: colorScheme === "dark" ? 0.3 : 0.08,
+        shadowRadius: 10,
+      };
+
   return (
     <Tabs
+      key={colorScheme}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.secondary,
         tabBarShowLabel: true,
-        tabBarStyle: {
-          backgroundColor: theme.card,
-          borderTopWidth: 1,
-          borderTopColor: theme.border,
-          height: 60 + insets.bottom,
-          paddingBottom: insets.bottom,
-          paddingTop: 6,
-          elevation: 10,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -3 },
-          shadowOpacity: colorScheme === "dark" ? 0.3 : 0.08,
-          shadowRadius: 10,
-        },
+        tabBarStyle,
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: "600",
@@ -39,7 +45,6 @@ export default function TabLayout() {
     >
       {/* ── Visible tabs ── */}
       <Tabs.Screen
-        key={colorScheme}
         name="news_content/index"
         options={{
           title: "Berita",
@@ -95,13 +100,7 @@ export default function TabLayout() {
 
       {/* ── Hidden tabs ── */}
       <Tabs.Screen name="index" options={{ href: null }} />
-      <Tabs.Screen
-        name="news_content/[id]"
-        options={{
-          href: null,
-          tabBarStyle: { display: "none" },
-        }}
-      />
+      <Tabs.Screen name="news_content/[id]" options={{ href: null }} />
     </Tabs>
   );
 }

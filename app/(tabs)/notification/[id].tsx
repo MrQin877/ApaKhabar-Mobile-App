@@ -1,18 +1,18 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { getTheme } from "@/constants/theme";
-import { useColorScheme } from "../../../hooks/use-color-scheme";
 import { markRead } from "@/services/notificationService";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { SFSymbol } from "expo-symbols";
 import { useEffect } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColorScheme } from "../../../hooks/use-color-scheme";
 
 type NotifType = "info" | "emergency" | "community";
 
@@ -53,7 +53,6 @@ const TYPE_CONFIG: Record<
     iconColor: "#3FCC54",
   },
 };
-
 
 export default function NotificationDetailScreen() {
   const router = useRouter();
