@@ -22,12 +22,71 @@ import { useNews } from "../../../hooks/useNews";
 
 const STALE_TIME = 5 * 60 * 1000;
 
+const BULAN: Record<string, number> = {
+  January: 0,
+  February: 1,
+  March: 2,
+  April: 3,
+  May: 4,
+  June: 5,
+  July: 6,
+  August: 7,
+  September: 8,
+  October: 9,
+  November: 10,
+  December: 11,
+  Januari: 0,
+  Februari: 1,
+  Mac: 2,
+  Mei: 4,
+  Jun: 5,
+  Julai: 6,
+  Ogos: 7,
+  Oktober: 9,
+  Disember: 11,
+};
+
+function parseDate(dateStr: string): Date | null {
+  const parts = dateStr.trim().split(" ");
+  if (parts.length !== 3) return null;
+  const day = parseInt(parts[0], 10);
+  const month = BULAN[parts[1]];
+  const year = parseInt(parts[2], 10);
+  if (isNaN(day) || month === undefined || isNaN(year)) return null;
+  return new Date(year, month, day);
+}
+
+function matchesDateFilter(
+  dateStr: string,
+  filter: "all" | "today" | "week" | "month",
+): boolean {
+  if (filter === "all") return true;
+  const d = parseDate(dateStr ?? "");
+  if (!d) return true;
+  const now = new Date();
+  if (filter === "today") return d.toDateString() === now.toDateString();
+  if (filter === "week") {
+    const weekAgo = new Date(now);
+    weekAgo.setDate(now.getDate() - 7);
+    return d >= weekAgo;
+  }
+  if (filter === "month") {
+    return (
+      d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+    );
+  }
+  return true;
+}
+
 export default function BeritaIndex() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
 
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useState<
+    "all" | "today" | "week" | "month"
+  >("all");
   const lastFetchRef = useRef<number>(0);
 
   const {
@@ -68,6 +127,13 @@ export default function BeritaIndex() {
     lastFetchRef.current = Date.now();
   }, [refreshNews, fetchAlert]);
 
+  const dateFilteredList = listNews.filter((item) =>
+    matchesDateFilter(item.date, dateFilter),
+  );
+
+  const showFeatured =
+    !!featuredNews && matchesDateFilter(featuredNews.date ?? "", dateFilter);
+
   return (
     <View
       style={[
@@ -80,7 +146,12 @@ export default function BeritaIndex() {
         backgroundColor={theme.card}
       />
 
-      <SearchBar search={search} onSearchChange={setSearch} theme={theme} />
+      <SearchBar
+        search={search}
+        onSearchChange={setSearch}
+        onFilterChange={setDateFilter}
+        theme={theme}
+      />
 
       <CategoryPills
         categories={categories}
@@ -116,25 +187,24 @@ export default function BeritaIndex() {
         >
           {alertMessage && <AlertCard message={alertMessage} theme={theme} />}
 
-          {/* Featured only on "Semua" view */}
-          {featuredNews && (
+          {showFeatured && (
             <FeaturedCard
-              id={featuredNews.id}
-              title={featuredNews.title}
-              category={featuredNews.category}
-              likes={featuredNews.likes}
-              comments={featuredNews.comments}
-              image={featuredNews.image}
+              id={featuredNews!.id}
+              title={featuredNews!.title}
+              category={featuredNews!.category}
+              likes={featuredNews!.likes}
+              comments={featuredNews!.comments}
+              image={featuredNews!.image}
             />
           )}
 
-          {listNews.length > 0 ? (
-            <NewsList news={listNews} theme={theme} />
+          {dateFilteredList.length > 0 ? (
+            <NewsList news={dateFilteredList} theme={theme} />
           ) : (
-            !featuredNews && (
+            !showFeatured && (
               <View style={styles.empty}>
                 <Text style={[styles.emptyText, { color: theme.secondary }]}>
-                  Tiada berita untuk kategori ini
+                  Tiada berita untuk tarikh ini
                 </Text>
               </View>
             )

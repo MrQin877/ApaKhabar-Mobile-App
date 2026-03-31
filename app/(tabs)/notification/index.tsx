@@ -26,6 +26,7 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -194,6 +195,7 @@ export default function NotificationScreen() {
     >
       <NotifHeader unreadCount={unreadCount} />
 
+      {/* Loading */}
       {loading && (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.primary} />
@@ -203,49 +205,78 @@ export default function NotificationScreen() {
         </View>
       )}
 
+      {/* Error */}
       {error && !loading && (
-        <View style={styles.center}>
-          <Ionicons
-            name="cloud-offline-outline"
-            size={48}
-            color={theme.secondary}
-          />
-          <Text style={[styles.emptyTitle, { color: theme.text }]}>Ralat</Text>
-          <Text style={[styles.centerText, { color: theme.secondary }]}>
-            {error}
-          </Text>
-          <TouchableOpacity
-            onPress={fetchNotifications}
-            style={[styles.retryBtn, { borderColor: theme.primary }]}
-          >
-            <Text style={[styles.retryText, { color: theme.primary }]}>
-              Cuba lagi
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={theme.primary}
+              colors={[theme.primary]}
+            />
+          }
+        >
+          <View style={styles.center}>
+            <Ionicons
+              name="cloud-offline-outline"
+              size={48}
+              color={theme.secondary}
+            />
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>
+              Ralat
             </Text>
-          </TouchableOpacity>
-        </View>
+            <Text style={[styles.centerText, { color: theme.secondary }]}>
+              {error}
+            </Text>
+            <TouchableOpacity
+              onPress={fetchNotifications}
+              style={[styles.retryBtn, { borderColor: theme.primary }]}
+            >
+              <Text style={[styles.retryText, { color: theme.primary }]}>
+                Cuba lagi
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       )}
 
+      {/* Empty */}
       {!loading && !error && notifs.length === 0 && (
-        <View style={styles.center}>
-          <Ionicons
-            name="notifications-off-outline"
-            size={64}
-            color={theme.secondary}
-          />
-          <Text style={[styles.emptyTitle, { color: theme.text }]}>
-            Tiada Notifikasi
-          </Text>
-          <Text style={[styles.centerText, { color: theme.secondary }]}>
-            Anda tidak mempunyai sebarang notifikasi buat masa ini
-          </Text>
-        </View>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={theme.primary}
+              colors={[theme.primary]}
+            />
+          }
+        >
+          <View style={styles.center}>
+            <Ionicons
+              name="notifications-off-outline"
+              size={64}
+              color={theme.secondary}
+            />
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>
+              Tiada Notifikasi
+            </Text>
+            <Text style={[styles.centerText, { color: theme.secondary }]}>
+              Anda tidak mempunyai sebarang notifikasi buat masa ini
+            </Text>
+          </View>
+        </ScrollView>
       )}
 
+      {/* List — keep FlatList for performance */}
       {!loading && !error && notifs.length > 0 && (
         <FlatList
           data={flatList}
           keyExtractor={(item) => item.key}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { flexGrow: 1 }]}
           renderItem={renderItem}
           refreshControl={
             <RefreshControl
