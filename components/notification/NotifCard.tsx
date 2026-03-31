@@ -1,6 +1,7 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { getTheme } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useRouter } from "expo-router";
 import type { SFSymbol } from "expo-symbols";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -20,33 +21,25 @@ export interface Notification {
 const TYPE_CONFIG: Record<
   NotifType,
   {
-    accentColor: string;
-    accentColorRead: string;
     icon: SFSymbol;
     iconColor: string;
-    pillLabel: string;
+    iconBg: string;
   }
 > = {
   emergency: {
-    accentColor: "#E05252",
-    accentColorRead: "#AABFBA",
     icon: "exclamationmark.triangle.fill",
     iconColor: "#E05252",
-    pillLabel: "Darurat",
+    iconBg: "#FEE8E8",
   },
   community: {
-    accentColor: "#3FCC54",
-    accentColorRead: "#AABFBA",
     icon: "megaphone.fill",
     iconColor: "#3FCC54",
-    pillLabel: "Pengumuman",
+    iconBg: "#E8F8EC",
   },
   info: {
-    accentColor: "#3FCC54",
-    accentColorRead: "#AABFBA",
     icon: "megaphone.fill",
     iconColor: "#3FCC54",
-    pillLabel: "Pengumuman",
+    iconBg: "#E8F8EC",
   },
 };
 
@@ -56,174 +49,114 @@ interface NotifCardProps {
 }
 
 export function NotifCard({ item, onPress }: NotifCardProps) {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
   const cfg = TYPE_CONFIG[item.type];
-  const isEmergency = item.type === "emergency";
 
-  const cardBg = item.read
-    ? theme.card
-    : isEmergency
-      ? theme.emergencyBg
-      : theme.communityBg;
-
-  const accentColor = item.read ? cfg.accentColorRead : cfg.accentColor;
-
-  const pillBg = item.read
-    ? theme.accent
-    : isEmergency
-      ? theme.warning
-      : theme.communityBg;
-
-  const pillTextColor = item.read
-    ? theme.secondary
-    : isEmergency
-      ? theme.error
-      : "#1A5C2A";
+  const handlePress = () => {
+    if (!item.read) onPress(item.id);
+    router.push({
+      pathname: "/(tabs)/notification/[id]",
+      params: {
+        id: item.id,
+        type: item.type,
+        title: item.title,
+        message: item.message,
+        channel: item.channel,
+        time: item.time,
+        sent_at_full: item.sent_at_full,
+        read: String(item.read),
+      },
+    });
+  };
 
   return (
     <TouchableOpacity
-      onPress={() => onPress(item.id)}
-      activeOpacity={0.8}
+      onPress={handlePress}
+      activeOpacity={0.7}
       style={[
-        styles.card,
+        styles.item,
         {
-          borderColor: isEmergency && !item.read ? "#E0525240" : theme.border,
-          backgroundColor: cardBg,
-          opacity: item.read ? 0.75 : 1,
+          borderBottomColor: theme.border,
+          opacity: item.read ? 0.45 : 1,
         },
       ]}
     >
-      {/* Left accent bar */}
-      <View style={[styles.accent, { backgroundColor: accentColor }]} />
-
-      {/* Card body */}
-      <View style={styles.body}>
-        {/* Icon bubble */}
-        <View
-          style={[
-            styles.iconBubble,
-            {
-              backgroundColor: item.read
-                ? theme.accent
-                : isEmergency
-                  ? theme.warning
-                  : theme.communityBg,
-            },
-          ]}
-        >
-          <IconSymbol
-            name={cfg.icon}
-            size={18}
-            color={item.read ? theme.secondary : cfg.iconColor}
-          />
+      {/* Icon with unread dot */}
+      <View style={styles.iconWrap}>
+        <View style={[styles.iconBubble, { backgroundColor: cfg.iconBg }]}>
+          <IconSymbol name={cfg.icon} size={20} color={cfg.iconColor} />
         </View>
-
-        {/* Content */}
-        <View style={styles.content}>
-          {/* Type pill */}
-          <View style={[styles.pill, { backgroundColor: pillBg }]}>
-            <Text style={[styles.pillText, { color: pillTextColor }]}>
-              {cfg.pillLabel}
-            </Text>
-          </View>
-
-          {/* Title */}
-          <Text
-            style={[
-              styles.title,
-              {
-                color: item.read ? theme.secondary : theme.text,
-                fontWeight: item.read ? "400" : "600",
-              },
-            ]}
-          >
-            {item.title}
-          </Text>
-
-          {/* Meta: channel · time */}
-          <View style={styles.metaRow}>
-            <Text style={[styles.metaText, { color: theme.secondary }]}>
-              {item.channel}
-            </Text>
-            <View style={[styles.metaDot, { backgroundColor: theme.border }]} />
-            <Text style={[styles.metaText, { color: theme.secondary }]}>
-              {item.time}
-            </Text>
-          </View>
-        </View>
-
-        {/* Unread green dot */}
         {!item.read && (
           <View
             style={[styles.unreadDot, { backgroundColor: theme.primary }]}
           />
         )}
       </View>
+
+      {/* Content */}
+      <View style={styles.content}>
+        <Text numberOfLines={2} style={[styles.title, { color: theme.text }]}>
+          {item.title}
+        </Text>
+        {item.message ? (
+          <Text
+            numberOfLines={1}
+            style={[styles.desc, { color: theme.secondary }]}
+          >
+            {item.message}
+          </Text>
+        ) : null}
+        <Text style={[styles.time, { color: theme.primary }]}>{item.time}</Text>
+      </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    alignItems: "stretch",
-    marginBottom: 8,
-    borderRadius: 12,
-    overflow: "hidden",
-    borderWidth: 0.5,
-  },
-  accent: { width: 5 },
-  body: {
-    flex: 1,
+  item: {
     flexDirection: "row",
     alignItems: "flex-start",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 10,
+    paddingVertical: 12,
+    gap: 12,
+    borderBottomWidth: 0.5,
+  },
+  iconWrap: {
+    position: "relative",
+    flexShrink: 0,
   },
   iconBubble: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    flexShrink: 0,
-    marginTop: 2,
-  },
-  content: { flex: 1 },
-  pill: {
-    alignSelf: "flex-start",
-    borderRadius: 999,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    marginBottom: 4,
-  },
-  pillText: {
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  title: {
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: 4,
-  },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  metaText: { fontSize: 11 },
-  metaDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 999,
   },
   unreadDot: {
-    width: 7,
-    height: 7,
+    position: "absolute",
+    top: -2,
+    right: -2,
+    width: 9,
+    height: 9,
     borderRadius: 999,
-    flexShrink: 0,
-    marginTop: 6,
+    borderWidth: 1.5,
+    borderColor: "#fff",
+  },
+  content: { flex: 1 },
+  title: {
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 19,
+    marginBottom: 2,
+  },
+  desc: {
+    fontSize: 11,
+    lineHeight: 16,
+    marginBottom: 3,
+  },
+  time: {
+    fontSize: 10,
+    fontWeight: "500",
   },
 });

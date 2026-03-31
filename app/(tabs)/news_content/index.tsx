@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from "react";
+import api from "@/services/api";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -15,32 +18,50 @@ import { NewsList } from "../../../components/news/NewsList";
 import { SearchBar } from "../../../components/news/SearchBar";
 import { getTheme } from "../../../constants/theme";
 import { useColorScheme } from "../../../hooks/use-color-scheme";
-import { BASE_URL, useNews } from "../../../hooks/useNews";
+import { useNews } from "../../../hooks/useNews";
 
+// --- date helpers (unchanged) ---
 const BULAN: Record<string, number> = {
-  // English
-  January: 0, February: 1, March: 2, April: 3, May: 4, June: 5,
-  July: 6, August: 7, September: 8, October: 9, November: 10, December: 11,
-  // Malay (only ones that differ from English)
-  Januari: 0, Februari: 1, Mac: 2, Mei: 4, Jun: 5,
-  Julai: 6, Ogos: 7, Oktober: 9, Disember: 11,
-  // Indonesian (only ones that differ)
-  Maret: 2, Juni: 5, Juli: 6, Agustus: 7,
+  January: 0,
+  February: 1,
+  March: 2,
+  April: 3,
+  May: 4,
+  June: 5,
+  July: 6,
+  August: 7,
+  September: 8,
+  October: 9,
+  November: 10,
+  December: 11,
+  Januari: 0,
+  Februari: 1,
+  Mac: 2,
+  Mei: 4,
+  Jun: 5,
+  Julai: 6,
+  Ogos: 7,
+  Oktober: 9,
+  Disember: 11,
+  Maret: 2,
+  Juni: 5,
+  Juli: 6,
+  Agustus: 7,
 };
 
 function parseDate(dateStr: string): Date | null {
   const parts = dateStr.trim().split(" ");
   if (parts.length !== 3) return null;
-  const day   = parseInt(parts[0], 10);
+  const day = parseInt(parts[0], 10);
   const month = BULAN[parts[1]];
-  const year  = parseInt(parts[2], 10);
+  const year = parseInt(parts[2], 10);
   if (isNaN(day) || month === undefined || isNaN(year)) return null;
   return new Date(year, month, day);
 }
 
 function matchesFilter(
   dateStr: string,
-  dateFilter: "all" | "today" | "week" | "month"
+  dateFilter: "all" | "today" | "week" | "month",
 ): boolean {
   if (dateFilter === "all") return true;
   const d = parseDate(dateStr ?? "");
@@ -53,11 +74,15 @@ function matchesFilter(
     return d >= weekAgo;
   }
   if (dateFilter === "month") {
-    return d.getMonth() === now.getMonth() &&
-           d.getFullYear() === now.getFullYear();
+    return (
+      d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+    );
   }
   return true;
 }
+
+// --- component ---
+const STALE_TIME = 5 * 60 * 1000;
 
 export default function BeritaIndex() {
   const insets = useSafeAreaInsets();
@@ -65,14 +90,10 @@ export default function BeritaIndex() {
   const theme = getTheme(colorScheme);
 
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
-  const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
-
-  useEffect(() => {
-    fetch(`${BASE_URL}/api/broadcasts/darurat`)
-      .then((r) => r.json())
-      .then((json) => setAlertMessage(json.message ?? null))
-      .catch(() => setAlertMessage(null));
-  }, []);
+  const [dateFilter, setDateFilter] = useState<
+    "all" | "today" | "week" | "month"
+  >("all");
+  const lastFetchRef = useRef<number>(0);
 
   const {
     featuredNews,
@@ -83,11 +104,40 @@ export default function BeritaIndex() {
     search,
     setSearch,
     loading,
+    refreshing,
     error,
+    handleRefresh: refreshNews,
   } = useNews();
 
+  // Fetch alert banner
+  const fetchAlert = useCallback(() => {
+    api
+      .get("/broadcasts/darurat")
+      .then((r) => setAlertMessage(r.data.message ?? null))
+      .catch(() => setAlertMessage(null));
+  }, []);
+
+  // Smart refetch on focus — only if stale
+  useFocusEffect(
+    useCallback(() => {
+      const now = Date.now();
+      if (now - lastFetchRef.current > STALE_TIME) {
+        refreshNews();
+        fetchAlert();
+        lastFetchRef.current = now;
+      }
+    }, [refreshNews, fetchAlert]),
+  );
+
+  // Pull-to-refresh — always fetch fresh
+  const handleRefresh = useCallback(async () => {
+    refreshNews();
+    fetchAlert();
+    lastFetchRef.current = Date.now();
+  }, [refreshNews, fetchAlert]);
+
   const dateFilteredNews = filteredNews.filter((item) =>
-    matchesFilter(item.date, dateFilter)
+    matchesFilter(item.date, dateFilter),
   );
 
   const showFeatured = featuredNews
@@ -95,7 +145,12 @@ export default function BeritaIndex() {
     : false;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.accent }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, backgroundColor: theme.accent },
+      ]}
+    >
       <StatusBar
         barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
         backgroundColor={theme.card}
@@ -123,7 +178,7 @@ export default function BeritaIndex() {
 
       {error && !loading && (
         <View style={styles.center}>
-          <Text style={{ color: "red" }}>{error}</Text>
+          <Text style={{ color: theme.error }}>{error}</Text>
         </View>
       )}
 
@@ -131,10 +186,16 @@ export default function BeritaIndex() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={theme.primary}
+              colors={[theme.primary]}
+            />
+          }
         >
-          {alertMessage && (
-            <AlertCard message={alertMessage} theme={theme} />
-          )}
+          {alertMessage && <AlertCard message={alertMessage} theme={theme} />}
 
           {showFeatured && featuredNews && (
             <FeaturedCard

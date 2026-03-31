@@ -1,12 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import api from "../services/api";
 
-// ─── Change this to match your setup ─────────────────────────────────────────
-// Android emulator  → http://10.0.2.2:8000
-// iOS simulator     → http://localhost:8000
-// Physical device   → http://192.168.x.x:8000  (your PC's local IP)
-export const BASE_URL = "http://localhost:8000";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 export interface NewsItem {
   id: string;
   title: string;
@@ -19,7 +13,6 @@ export interface NewsItem {
   body?: string;
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
 export function useNews() {
   const [allNews, setAllNews] = useState<NewsItem[]>([]);
   const [featuredNews, setFeaturedNews] = useState<NewsItem | null>(null);
@@ -27,61 +20,69 @@ export function useNews() {
   const [activeCategory, setActiveCategory] = useState("Semua");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ── Fetch all news & latest featured ──────────────────────────────────────
-  useEffect(() => {
-    setLoading(true);
+  const fetchNews = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
 
-    fetch(`${BASE_URL}/api/news`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Gagal memuat berita.");
-        return res.json();
-      })
-      .then((json) => {
-        // Expects: { data: NewsItem[] }
-        // Adjust if your API returns a different shape
-        const news: NewsItem[] = json.data ?? json;
+    try {
+      const res = await api.get("/news");
+      const news: NewsItem[] = res.data?.data ?? res.data;
 
-        if (news.length === 0) {
-          setAllNews([]);
-          setFeaturedNews(null);
-          return;
-        }
+      if (news.length === 0) {
+        setAllNews([]);
+        setFeaturedNews(null);
+        return;
+      }
 
-        // The first item (most recent) becomes the featured card
-        const [latest, ...rest] = news;
-        setFeaturedNews(latest);
-        setAllNews(rest); // rest shown in the list below featured
+      const [latest, ...rest] = news;
+      setFeaturedNews(latest);
+      setAllNews(rest);
 
-        // Build category pills from API data
-        const unique = Array.from(new Set(news.map((n) => n.category)));
-        setCategories(["Semua", ...unique]);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      const unique = Array.from(new Set(news.map((n) => n.category)));
+      setCategories(["Semua", ...unique]);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
-  // ── Filter list news by category + search ─────────────────────────────────
+  // Fetch on mount
+  useEffect(() => {
+    fetchNews();
+  }, [fetchNews]);
+
+  // Pull-to-refresh handler
+  const handleRefresh = useCallback(() => {
+    fetchNews(true);
+  }, [fetchNews]);
+
   const filteredNews = allNews.filter((item) => {
     const matchCategory =
       activeCategory === "Semua" || item.category === activeCategory;
-    const matchSearch = item.title
-      .toLowerCase()
-      .includes(search.toLowerCase());
+    const matchSearch = item.title.toLowerCase().includes(search.toLowerCase());
     return matchCategory && matchSearch;
   });
 
   return {
-    featuredNews,       // ← latest news for FeaturedCard (replaces hardcoded FEATURED)
-    filteredNews,       // ← filtered list for NewsList
+    featuredNews,
+    filteredNews,
     categories,
     activeCategory,
     setActiveCategory,
     search,
     setSearch,
     loading,
+    refreshing,
     error,
+    handleRefresh,
   };
 }
