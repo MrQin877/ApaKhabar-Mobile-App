@@ -78,7 +78,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile/index"
+        name="profile"
         options={{
           title: "Profil",
           tabBarLabel: "Profil",
@@ -92,7 +92,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* ── Hidden screens ── */}
+      {/* ── Hidden tabs ── */}
       <Tabs.Screen name="index" options={{ href: null }} />
       <Tabs.Screen
         name="news_content/[id]"
