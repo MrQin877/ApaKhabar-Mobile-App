@@ -54,7 +54,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="notification/index"
+        name="notification"
         options={{
           title: "Notifikasi",
           tabBarLabel: "Notifikasi",
@@ -90,7 +90,20 @@ export default function TabLayout() {
           ),
         }}
       />
+<<<<<<< Updated upstream
       <Tabs.Screen name="index" options={{ href: null }} />
+=======
+
+      {/* ── Hidden screens ── */}
+      <Tabs.Screen name="index" options={{ href: null }} />
+      <Tabs.Screen
+        name="news_content/[id]"
+        options={{
+          href: null,
+          tabBarStyle: { display: "none" },
+        }}
+      />
+>>>>>>> Stashed changes
     </Tabs>
   );
 }
