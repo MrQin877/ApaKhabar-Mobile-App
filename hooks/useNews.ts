@@ -15,7 +15,6 @@ export interface NewsItem {
 
 export function useNews() {
   const [allNews, setAllNews] = useState<NewsItem[]>([]);
-  const [featuredNews, setFeaturedNews] = useState<NewsItem | null>(null);
   const [categories, setCategories] = useState<string[]>(["Semua"]);
   const [activeCategory, setActiveCategory] = useState("Semua");
   const [search, setSearch] = useState("");
@@ -24,26 +23,15 @@ export function useNews() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchNews = useCallback(async (isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     setError(null);
 
     try {
       const res = await api.get("/news");
       const news: NewsItem[] = res.data?.data ?? res.data;
 
-      if (news.length === 0) {
-        setAllNews([]);
-        setFeaturedNews(null);
-        return;
-      }
-
-      const [latest, ...rest] = news;
-      setFeaturedNews(latest);
-      setAllNews(rest);
+      setAllNews(news);
 
       const unique = Array.from(new Set(news.map((n) => n.category)));
       setCategories(["Semua", ...unique]);
@@ -55,15 +43,13 @@ export function useNews() {
     }
   }, []);
 
-  // Fetch on mount
   useEffect(() => {
     fetchNews();
   }, [fetchNews]);
 
-  // Pull-to-refresh handler
-  const handleRefresh = useCallback(() => {
-    fetchNews(true);
-  }, [fetchNews]);
+  const handleRefresh = useCallback(() => fetchNews(true), [fetchNews]);
+
+  const isFiltering = activeCategory !== "Semua" || search.trim() !== "";
 
   const filteredNews = allNews.filter((item) => {
     const matchCategory =
@@ -72,9 +58,15 @@ export function useNews() {
     return matchCategory && matchSearch;
   });
 
+  // "Semua" view: first item is featured, rest is list
+  // Category/search view: no featured card, everything is a flat list
+  const featuredNews =
+    !isFiltering && filteredNews.length > 0 ? filteredNews[0] : null;
+  const listNews = !isFiltering ? filteredNews.slice(1) : filteredNews;
+
   return {
     featuredNews,
-    filteredNews,
+    listNews,
     categories,
     activeCategory,
     setActiveCategory,
