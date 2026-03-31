@@ -1,3 +1,4 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,11 +12,10 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { IconSymbol } from "../../../components/ui/icon-symbol";
 import { getTheme } from "../../../constants/theme";
 import { useColorScheme } from "../../../hooks/use-color-scheme";
-import { BASE_URL } from "../../../hooks/useNews";
-import { IconSymbol } from "../../../components/ui/icon-symbol";
+import api from "../../../services/api";
 
 const { width } = Dimensions.get("window");
 
@@ -42,7 +42,7 @@ interface RelatedItem {
 function resolveImage(image: string): string {
   if (!image) return "https://placehold.co/800x400";
   if (image.startsWith("http://") || image.startsWith("https://")) return image;
-  return `${BASE_URL}/storage/${image}`;
+  return `${process.env.EXPO_PUBLIC_API_URL?.replace("/api", "")}/storage/${image}`;
 }
 
 export default function NewsDetailPage() {
@@ -63,17 +63,12 @@ export default function NewsDetailPage() {
     setError(null);
 
     Promise.all([
-      fetch(`${BASE_URL}/api/news/${id}`).then((r) => {
-        if (!r.ok) throw new Error("Berita tidak ditemukan.");
-        return r.json();
-      }),
-      fetch(`${BASE_URL}/api/news/${id}/related`)
-        .then((r) => (r.ok ? r.json() : { data: [] }))
-        .catch(() => ({ data: [] })),
+      api.get(`/news/${id}`),
+      api.get(`/news/${id}/related`).catch(() => ({ data: { data: [] } })),
     ])
-      .then(([detailJson, relatedJson]) => {
-        setNews(detailJson.data ?? detailJson);
-        setRelated(relatedJson.data ?? []);
+      .then(([detailRes, relatedRes]) => {
+        setNews(detailRes.data.data ?? detailRes.data);
+        setRelated(relatedRes.data.data ?? []);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -103,16 +98,18 @@ export default function NewsDetailPage() {
     );
   }
 
-  // Always show full body — no truncation ✅
   const bodyText = news.body ?? news.content ?? "";
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
 
       <ScrollView showsVerticalScrollIndicator={false}>
-
-        {/* ── Hero Image ── */}
+        {/* Hero Image */}
         <View style={styles.heroWrap}>
           <Image
             source={{ uri: resolveImage(news.image) }}
@@ -127,50 +124,48 @@ export default function NewsDetailPage() {
           </TouchableOpacity>
         </View>
 
-        {/* ── Content card ── */}
+        {/* Content card */}
         <View style={[styles.contentCard, { backgroundColor: theme.card }]}>
-
-          {/* Category badge */}
-          <View style={[styles.categoryBadge, { backgroundColor: theme.primary }]}>
+          <View
+            style={[styles.categoryBadge, { backgroundColor: theme.primary }]}
+          >
             <Text style={styles.categoryBadgeText}>{news.category}</Text>
           </View>
 
-          {/* Title */}
           <Text style={[styles.title, { color: theme.text }]}>
             {news.title}
           </Text>
-
-          {/* Date */}
           <Text style={[styles.date, { color: theme.secondary }]}>
             {news.date}
           </Text>
 
-          {/* Stats row — number on top, icon below, spread across ✅ */}
           <View style={[styles.statsRow, { borderColor: theme.border }]}>
-            <StatBox value={news.views}    icon="eye.fill"          theme={theme} />
-            <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
-            <StatBox value={news.likes}    icon="heart.fill"        theme={theme} />
-            <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
-            <StatBox value={news.comments} icon="bubble.left.fill"  theme={theme} />
-            </View>
+            <StatBox value={news.views} icon="eye.fill" theme={theme} />
+            <View
+              style={[styles.statDivider, { backgroundColor: theme.border }]}
+            />
+            <StatBox value={news.likes} icon="heart.fill" theme={theme} />
+            <View
+              style={[styles.statDivider, { backgroundColor: theme.border }]}
+            />
+            <StatBox
+              value={news.comments}
+              icon="bubble.left.fill"
+              theme={theme}
+            />
+          </View>
 
-          {/* Divider */}
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
-          {/* Body — full content, no truncation ✅ */}
-          <Text style={[styles.body, { color: theme.text }]}>
-            {bodyText}
-          </Text>
-
+          <Text style={[styles.body, { color: theme.text }]}>{bodyText}</Text>
         </View>
 
-        {/* ── Related news ── */}
+        {/* Related news */}
         {related.length > 0 && (
           <View style={styles.relatedWrap}>
             <Text style={[styles.relatedHeading, { color: theme.text }]}>
               Berita Lainnya
             </Text>
-
             {related.map((item) => (
               <TouchableOpacity
                 key={item.id}
@@ -192,7 +187,12 @@ export default function NewsDetailPage() {
                   >
                     {item.title}
                   </Text>
-                  <View style={[styles.relatedBadge, { backgroundColor: theme.primary }]}>
+                  <View
+                    style={[
+                      styles.relatedBadge,
+                      { backgroundColor: theme.primary },
+                    ]}
+                  >
                     <Text style={styles.relatedBadgeText}>{item.category}</Text>
                   </View>
                 </View>
@@ -207,7 +207,6 @@ export default function NewsDetailPage() {
   );
 }
 
-// ─── Stat box — number on top, icon below ✅ ──────────────────────────────────
 function StatBox({
   icon,
   value,
@@ -227,9 +226,8 @@ function StatBox({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  center:    { flex: 1, justifyContent: "center", alignItems: "center" },
-
-  heroWrap:  { width: "100%", aspectRatio: 16 / 9 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  heroWrap: { width: "100%", aspectRatio: 16 / 9 },
   heroImage: { width: "100%", height: "100%" },
   backBtn: {
     position: "absolute",
@@ -242,7 +240,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   backArrow: { color: "#fff", fontSize: 26, lineHeight: 30, fontWeight: "300" },
-
   contentCard: {
     marginHorizontal: 16,
     marginTop: -20,
@@ -254,7 +251,6 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
   },
-
   categoryBadge: {
     alignSelf: "flex-start",
     paddingHorizontal: 12,
@@ -262,11 +258,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   categoryBadgeText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-
   title: { fontSize: 20, fontWeight: "700", lineHeight: 28 },
-  date:  { fontSize: 13 },
-
-  // Stats box — spread evenly with dividers ✅
+  date: { fontSize: 13 },
   statsRow: {
     flexDirection: "row",
     justifyContent: "space-evenly",
@@ -276,22 +269,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginVertical: 4,
   },
-  statBox: {
-    flex: 1,
-    alignItems: "center",
-    gap: 4,
-  },
-  statDivider: {
-    width: 1,
-    height: 36,
-  },
+  statBox: { flex: 1, alignItems: "center", gap: 4 },
+  statDivider: { width: 1, height: 36 },
   statValue: { fontSize: 16, fontWeight: "700" },
-
   divider: { height: 1, marginVertical: 4 },
-
-  body:     { fontSize: 14, lineHeight: 22 },
-
-  relatedWrap:    { paddingHorizontal: 16, marginTop: 20, gap: 12 },
+  body: { fontSize: 14, lineHeight: 22 },
+  relatedWrap: { paddingHorizontal: 16, marginTop: 20, gap: 12 },
   relatedHeading: { fontSize: 16, fontWeight: "700" },
   relatedCard: {
     flexDirection: "row",
@@ -303,7 +286,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   relatedImage: { width: "35%", aspectRatio: 4 / 3 },
-  relatedInfo:  { flex: 1, padding: 10, justifyContent: "space-between" },
+  relatedInfo: { flex: 1, padding: 10, justifyContent: "space-between" },
   relatedTitle: { fontSize: 13, fontWeight: "600", lineHeight: 18 },
   relatedBadge: {
     alignSelf: "flex-start",
@@ -313,7 +296,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   relatedBadgeText: { color: "#fff", fontSize: 11, fontWeight: "600" },
-
   backTextBtn: {
     paddingHorizontal: 16,
     paddingVertical: 8,
