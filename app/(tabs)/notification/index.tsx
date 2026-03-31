@@ -2,9 +2,9 @@ import {
   NotifCard,
   NotifFooter,
   NotifHeader,
-  NotifMarkAllButton,
   type Notification,
 } from "@/components/notification";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { getTheme } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
@@ -13,20 +13,29 @@ import {
   markRead,
 } from "@/services/notificationService";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  RefreshControl,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// List item types for FlatList
-type HeaderItem = { kind: "header"; date: string; key: string };
+type HeaderItem = {
+  kind: "header";
+  date: string;
+  hasUnread: boolean;
+  key: string;
+};
 type NotifItem = { kind: "notif"; data: Notification; key: string };
 type ListItem = HeaderItem | NotifItem;
+
+const STALE_TIME = 5 * 60 * 1000;
 
 export default function NotificationScreen() {
   const insets = useSafeAreaInsets();
@@ -34,13 +43,12 @@ export default function NotificationScreen() {
   const theme = getTheme(colorScheme);
   const [notifs, setNotifs] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lastFetchRef = useRef<number>(0);
 
   const unreadCount = notifs.filter((n) => !n.read).length;
-
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
+  const emergencyUnread = notifs.find((n) => n.type === "emergency" && !n.read);
 
   const fetchNotifications = async () => {
     try {
@@ -63,11 +71,28 @@ export default function NotificationScreen() {
         read: n.is_read,
       }));
       setNotifs(mapped);
-    } catch (err) {
+    } catch {
       setError("Gagal memuatkan notifikasi");
     } finally {
       setLoading(false);
     }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      const now = Date.now();
+      if (now - lastFetchRef.current > STALE_TIME) {
+        fetchNotifications();
+        lastFetchRef.current = now;
+      }
+    }, []),
+  );
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchNotifications();
+    lastFetchRef.current = Date.now();
+    setRefreshing(false);
   };
 
   const handleMarkRead = async (id: string) => {
@@ -81,36 +106,59 @@ export default function NotificationScreen() {
     }
   };
 
-  const handleMarkAllRead = async () => {
+  const handleMarkAllRead = async (date?: string) => {
     try {
       await markAllRead();
-      setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+      setNotifs((prev) =>
+        prev.map((n) => {
+          if (!date) return { ...n, read: true };
+          const d = n.sent_at_full?.split(",")[0] ?? "Hari ini";
+          return d === date ? { ...n, read: true } : n;
+        }),
+      );
     } catch (err) {
       console.error("Failed to mark all as read", err);
     }
   };
 
-  // Group by date then flatten into FlatList items
-  const flatList: ListItem[] = React.useMemo(() => {
+  const flatList = useMemo<ListItem[]>(() => {
     const groups = notifs.reduce<Record<string, Notification[]>>((acc, n) => {
-      const date = n.sent_at_full ? n.sent_at_full.split(",")[0] : "Hari ini";
+      const date = n.sent_at_full?.split(",")[0] ?? "Hari ini";
       if (!acc[date]) acc[date] = [];
       acc[date].push(n);
       return acc;
     }, {});
 
     return Object.entries(groups).flatMap(([date, items]) => [
-      { kind: "header", date, key: `header-${date}` },
-      ...items.map((n) => ({ kind: "notif" as const, data: n, key: n.id })),
+      {
+        kind: "header" as const,
+        date,
+        hasUnread: items.some((n) => !n.read),
+        key: `header-${date}`,
+      },
+      ...items.map((n) => ({
+        kind: "notif" as const,
+        data: n,
+        key: n.id,
+      })),
     ]);
   }, [notifs]);
 
   const renderItem = ({ item }: { item: ListItem }) => {
     if (item.kind === "header") {
       return (
-        <Text style={[styles.dateLabel, { color: theme.secondary }]}>
-          {item.date}
-        </Text>
+        <View style={[styles.sectionRow, { borderBottomColor: theme.border }]}>
+          <Text style={[styles.sectionLabel, { color: theme.text }]}>
+            {item.date}
+          </Text>
+          {item.hasUnread && (
+            <TouchableOpacity onPress={() => handleMarkAllRead(item.date)}>
+              <Text style={[styles.markReadBtn, { color: theme.primary }]}>
+                Tandai dibaca
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       );
     }
     return <NotifCard item={item.data} onPress={handleMarkRead} />;
@@ -118,24 +166,23 @@ export default function NotificationScreen() {
 
   return (
     <View
-      style={[
-        styles.container,
-        { backgroundColor: theme.background, paddingTop: insets.top },
-      ]}
+      style={{
+        flex: 1,
+        backgroundColor: theme.background,
+        paddingTop: insets.top,
+      }}
     >
       <NotifHeader unreadCount={unreadCount} />
 
-      {/* Loading */}
       {loading && (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.primary} />
-          <Text style={[styles.loadingText, { color: theme.secondary }]}>
-            Memuatkan notifikasi...
+          <Text style={[styles.centerText, { color: theme.secondary }]}>
+            Memuatkan...
           </Text>
         </View>
       )}
 
-      {/* Error */}
       {error && !loading && (
         <View style={styles.center}>
           <Ionicons
@@ -144,13 +191,20 @@ export default function NotificationScreen() {
             color={theme.secondary}
           />
           <Text style={[styles.emptyTitle, { color: theme.text }]}>Ralat</Text>
-          <Text style={[styles.emptyText, { color: theme.secondary }]}>
+          <Text style={[styles.centerText, { color: theme.secondary }]}>
             {error}
           </Text>
+          <TouchableOpacity
+            onPress={fetchNotifications}
+            style={[styles.retryBtn, { borderColor: theme.primary }]}
+          >
+            <Text style={[styles.retryText, { color: theme.primary }]}>
+              Cuba lagi
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
 
-      {/* Empty */}
       {!loading && !error && notifs.length === 0 && (
         <View style={styles.center}>
           <Ionicons
@@ -161,60 +215,111 @@ export default function NotificationScreen() {
           <Text style={[styles.emptyTitle, { color: theme.text }]}>
             Tiada Notifikasi
           </Text>
-          <Text style={[styles.emptyText, { color: theme.secondary }]}>
+          <Text style={[styles.centerText, { color: theme.secondary }]}>
             Anda tidak mempunyai sebarang notifikasi buat masa ini
           </Text>
         </View>
       )}
 
-      {/* List grouped by date */}
       {!loading && !error && notifs.length > 0 && (
         <FlatList
           data={flatList}
           keyExtractor={(item) => item.key}
           contentContainerStyle={styles.listContent}
           renderItem={renderItem}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={theme.primary}
+              colors={[theme.primary]}
+            />
+          }
+          ListHeaderComponent={
+            emergencyUnread ? (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => handleMarkRead(emergencyUnread.id)}
+                style={[
+                  styles.emergencyBanner,
+                  { backgroundColor: theme.warning },
+                ]}
+              >
+                <View style={styles.emergencyIconWrap}>
+                  <IconSymbol
+                    name="exclamationmark.triangle.fill"
+                    size={18}
+                    color={theme.error}
+                  />
+                </View>
+                <View style={styles.emergencyContent}>
+                  <Text style={[styles.emergencyTitle, { color: theme.error }]}>
+                    Darurat!
+                  </Text>
+                  <Text
+                    numberOfLines={2}
+                    style={[styles.emergencyText, { color: theme.error }]}
+                  >
+                    {emergencyUnread.title}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ) : null
+          }
           ListFooterComponent={<NotifFooter />}
+          showsVerticalScrollIndicator={false}
         />
       )}
-
-      {unreadCount > 0 && <NotifMarkAllButton onPress={handleMarkAllRead} />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
+  listContent: { paddingHorizontal: 16, paddingBottom: 32 },
+  sectionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 16,
+    paddingBottom: 6,
   },
-  dateLabel: {
-    fontSize: 11,
-    fontWeight: "500",
-    marginTop: 12,
-    marginBottom: 8,
-    letterSpacing: 0.3,
+  sectionLabel: { fontSize: 13, fontWeight: "700" },
+  markReadBtn: { fontSize: 11, fontWeight: "600" },
+  emergencyBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 4,
   },
+  emergencyIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "#FEE8E8",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  emergencyContent: { flex: 1 },
+  emergencyTitle: { fontSize: 12, fontWeight: "700", marginBottom: 2 },
+  emergencyText: { fontSize: 12, lineHeight: 17 },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 32,
-    gap: 12,
+    gap: 10,
   },
-  loadingText: {
-    fontSize: 14,
-    marginTop: 8,
+  centerText: { fontSize: 13, textAlign: "center" },
+  emptyTitle: { fontSize: 16, fontWeight: "700", textAlign: "center" },
+  retryBtn: {
+    marginTop: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
   },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  emptyText: {
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 22,
-  },
+  retryText: { fontSize: 13, fontWeight: "600" },
 });
