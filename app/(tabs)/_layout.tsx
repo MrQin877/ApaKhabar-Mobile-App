@@ -6,32 +6,38 @@ import { IconSymbol } from "../../components/ui/icon-symbol";
 import { getTheme } from "../../constants/theme";
 import { useColorScheme } from "../../hooks/use-color-scheme";
 
+// Screens where tab bar should be hidden
+const HIDDEN_SCREENS = ["[id]", "change-email", "change-phone", "change-password", "data-privacy"];
+
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
   const { unreadCount } = useNotificationCount();
 
+  const tabBarStyle = {
+        backgroundColor: theme.card,
+        borderTopWidth: 1,
+        borderTopColor: theme.border,
+        height: 60 + insets.bottom,
+        paddingBottom: insets.bottom,
+        paddingTop: 6,
+        elevation: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: colorScheme === "dark" ? 0.3 : 0.08,
+        shadowRadius: 10,
+      };
+
   return (
     <Tabs
+      key={colorScheme}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.secondary,
         tabBarShowLabel: true,
-        tabBarStyle: {
-          backgroundColor: theme.card,
-          borderTopWidth: 1,
-          borderTopColor: theme.border,
-          height: 60 + insets.bottom,
-          paddingBottom: insets.bottom,
-          paddingTop: 6,
-          elevation: 10,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -3 },
-          shadowOpacity: colorScheme === "dark" ? 0.3 : 0.08,
-          shadowRadius: 10,
-        },
+        tabBarStyle,
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: "600",
@@ -81,7 +87,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile/index"
+        name="profile"
         options={{
           title: "Profil",
           tabBarLabel: "Profil",
@@ -95,15 +101,9 @@ export default function TabLayout() {
         }}
       />
 
-      {/* ── Hidden screens ── */}
+      {/* ── Hidden tabs ── */}
       <Tabs.Screen name="index" options={{ href: null }} />
-      <Tabs.Screen
-        name="news_content/[id]"
-        options={{
-          href: null,
-          tabBarStyle: { display: "none" },
-        }}
-      />
+      <Tabs.Screen name="news_content/[id]" options={{ href: null }} />
     </Tabs>
   );
 }

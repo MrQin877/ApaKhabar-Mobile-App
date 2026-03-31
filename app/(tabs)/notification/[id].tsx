@@ -1,18 +1,18 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { getTheme } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { markRead } from "@/services/notificationService";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { SFSymbol } from "expo-symbols";
 import { useEffect } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColorScheme } from "../../../hooks/use-color-scheme";
 
 type NotifType = "info" | "emergency" | "community";
 
@@ -54,12 +54,6 @@ const TYPE_CONFIG: Record<
   },
 };
 
-const router = useRouter();
-
-const handleBack = () => {
-  router.back();
-};
-
 export default function NotificationDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -97,7 +91,7 @@ export default function NotificationDetailScreen() {
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <TouchableOpacity
-          onPress={handleBack}
+          onPress={() => router.back()}
           style={styles.backBtn}
           activeOpacity={0.7}
         >
