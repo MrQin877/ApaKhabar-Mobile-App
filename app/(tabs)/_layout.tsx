@@ -1,3 +1,4 @@
+import { useNotificationCount } from "@/context/NotificationContext";
 import { Tabs } from "expo-router";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -12,6 +13,7 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
+  const { unreadCount } = useNotificationCount();
 
   const tabBarStyle = {
         backgroundColor: theme.card,
@@ -74,7 +76,8 @@ export default function TabLayout() {
               />
             </View>
           ),
-          tabBarBadge: 3,
+          // Dynamic — null hides the badge when 0
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           tabBarBadgeStyle: {
             backgroundColor: "#FF3B30",
             color: "#fff",

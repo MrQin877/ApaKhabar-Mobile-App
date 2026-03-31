@@ -6,6 +6,7 @@ import {
 } from "@/components/notification";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { getTheme } from "@/constants/theme";
+import { useNotificationCount } from "@/context/NotificationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
   getNotifications,
@@ -14,7 +15,13 @@ import {
 } from "@/services/notificationService";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -41,6 +48,7 @@ export default function NotificationScreen() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
+  const { setUnreadCount, showToast } = useNotificationCount();
   const [notifs, setNotifs] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -71,6 +79,14 @@ export default function NotificationScreen() {
         read: n.is_read,
       }));
       setNotifs(mapped);
+
+      // Show toast if there's an unread emergency  ← add this
+      const unreadDarurat = mapped.find(
+        (n) => n.type === "emergency" && !n.read,
+      );
+      if (unreadDarurat) {
+        showToast(unreadDarurat.title);
+      }
     } catch {
       setError("Gagal memuatkan notifikasi");
     } finally {
@@ -87,6 +103,10 @@ export default function NotificationScreen() {
       }
     }, []),
   );
+  useEffect(() => {
+    const count = notifs.filter((n) => !n.read).length;
+    setUnreadCount(count);
+  }, [notifs]);
 
   const handleRefresh = async () => {
     setRefreshing(true);

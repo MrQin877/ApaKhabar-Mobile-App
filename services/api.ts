@@ -24,6 +24,9 @@ api.interceptors.request.use(async (config: any) => {
     token = await SecureStore.getItemAsync("auth_token");
   }
 
+  console.log("Auth token:", token ? "EXISTS" : "NULL"); // ← add this
+  console.log("Request URL:", config.url); // ← add this
+
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
