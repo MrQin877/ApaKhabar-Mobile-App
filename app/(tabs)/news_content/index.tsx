@@ -1,7 +1,9 @@
 import api from "@/services/api";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -18,8 +20,8 @@ import { getTheme } from "../../../constants/theme";
 import { useColorScheme } from "../../../hooks/use-color-scheme";
 import { useNews } from "../../../hooks/useNews";
 
+// --- date helpers (unchanged) ---
 const BULAN: Record<string, number> = {
-  // English
   January: 0,
   February: 1,
   March: 2,
@@ -32,7 +34,6 @@ const BULAN: Record<string, number> = {
   October: 9,
   November: 10,
   December: 11,
-  // Malay (only ones that differ from English)
   Januari: 0,
   Februari: 1,
   Mac: 2,
@@ -42,7 +43,6 @@ const BULAN: Record<string, number> = {
   Ogos: 7,
   Oktober: 9,
   Disember: 11,
-  // Indonesian (only ones that differ)
   Maret: 2,
   Juni: 5,
   Juli: 6,
@@ -81,6 +81,9 @@ function matchesFilter(
   return true;
 }
 
+// --- component ---
+const STALE_TIME = 5 * 60 * 1000;
+
 export default function BeritaIndex() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
@@ -90,13 +93,7 @@ export default function BeritaIndex() {
   const [dateFilter, setDateFilter] = useState<
     "all" | "today" | "week" | "month"
   >("all");
-
-  useEffect(() => {
-    api
-      .get("/broadcasts/darurat")
-      .then((r) => setAlertMessage(r.data.message ?? null))
-      .catch(() => setAlertMessage(null));
-  }, []);
+  const lastFetchRef = useRef<number>(0);
 
   const {
     featuredNews,
@@ -107,8 +104,37 @@ export default function BeritaIndex() {
     search,
     setSearch,
     loading,
+    refreshing,
     error,
+    handleRefresh: refreshNews,
   } = useNews();
+
+  // Fetch alert banner
+  const fetchAlert = useCallback(() => {
+    api
+      .get("/broadcasts/darurat")
+      .then((r) => setAlertMessage(r.data.message ?? null))
+      .catch(() => setAlertMessage(null));
+  }, []);
+
+  // Smart refetch on focus — only if stale
+  useFocusEffect(
+    useCallback(() => {
+      const now = Date.now();
+      if (now - lastFetchRef.current > STALE_TIME) {
+        refreshNews();
+        fetchAlert();
+        lastFetchRef.current = now;
+      }
+    }, [refreshNews, fetchAlert]),
+  );
+
+  // Pull-to-refresh — always fetch fresh
+  const handleRefresh = useCallback(async () => {
+    refreshNews();
+    fetchAlert();
+    lastFetchRef.current = Date.now();
+  }, [refreshNews, fetchAlert]);
 
   const dateFilteredNews = filteredNews.filter((item) =>
     matchesFilter(item.date, dateFilter),
@@ -152,7 +178,7 @@ export default function BeritaIndex() {
 
       {error && !loading && (
         <View style={styles.center}>
-          <Text style={{ color: "red" }}>{error}</Text>
+          <Text style={{ color: theme.error }}>{error}</Text>
         </View>
       )}
 
@@ -160,6 +186,14 @@ export default function BeritaIndex() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={theme.primary}
+              colors={[theme.primary]}
+            />
+          }
         >
           {alertMessage && <AlertCard message={alertMessage} theme={theme} />}
 
