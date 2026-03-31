@@ -25,18 +25,33 @@ const clearToken = async () => {
 export const login = async (email: string, password: string) => {
   const response = await api.post('/api/login', { email, password });
   await saveToken(response.data.token, response.data.user);
+
+  // 🔍 DEBUG
+  console.log('[AUTH] ✅ Login OK |', response.data.user?.email, '| role:', response.data.user?.role);
+
   return response.data;
 };
 
 export const register = async (name: string, email: string, password: string) => {
   const response = await api.post('/api/register', { name, email, password });
   await saveToken(response.data.token, response.data.user);
+
+  // 🔍 DEBUG
+  console.log('[AUTH] ✅ Register OK |', response.data.user?.email);
+
   return response.data;
 };
 
 export const logout = async () => {
-  await api.post('/logout');
-  await clearToken();
+  try {
+    await api.post('/api/logout');
+    console.log('[AUTH] ✅ Logout OK | token deleted from server');
+  } catch (err: any) {
+    console.warn('[AUTH] ⚠️ Logout API fail |', err?.response?.status ?? err?.message);
+  } finally {
+    await clearToken();
+    console.log('[AUTH] 🧹 Local token cleared');
+  }
 };
 
 export const getUser = async () => {
