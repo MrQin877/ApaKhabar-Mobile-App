@@ -91,7 +91,7 @@ export default function DataPrivacyScreen() {
         {sections.map((section, index) => (
           <View key={index} style={[styles.section, { backgroundColor: theme.card ?? '#fff', borderColor: theme.border }]}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>{section.title}</Text>
-            <Text style={[styles.sectionContent, { color: theme.secondary }]}>{section.content}</Text>
+            <Text style={[styles.sectionContent, { color: theme.text, opacity: 0.65 }]}>{section.content}</Text>
           </View>
         ))}
 
