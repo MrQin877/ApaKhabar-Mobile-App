@@ -3,6 +3,7 @@ import {
   NotificationProvider,
   useNotificationCount,
 } from "@/context/NotificationContext";
+import { AppearanceProvider } from "@/context/AppearanceContext";
 import { registerPushToken } from "@/services/pushToken";
 import { PortalHost } from "@rn-primitives/portal";
 import * as Linking from "expo-linking";
@@ -72,8 +73,10 @@ function RootContent() {
 
 export default function RootLayout() {
   return (
-    <NotificationProvider>
-      <RootContent />
-    </NotificationProvider>
+    <AppearanceProvider>
+      <NotificationProvider>
+        <RootContent />
+      </NotificationProvider>
+    </AppearanceProvider>
   );
 }

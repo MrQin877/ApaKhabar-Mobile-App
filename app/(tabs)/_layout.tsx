@@ -6,9 +6,6 @@ import { IconSymbol } from "../../components/ui/icon-symbol";
 import { getTheme } from "../../constants/theme";
 import { useColorScheme } from "../../hooks/use-color-scheme";
 
-// Screens where tab bar should be hidden
-const HIDDEN_SCREENS = ["[id]", "change-email", "change-phone", "change-password", "data-privacy"];
-
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
@@ -16,18 +13,15 @@ export default function TabLayout() {
   const { unreadCount } = useNotificationCount();
 
   const tabBarStyle = {
-        backgroundColor: theme.card,
-        borderTopWidth: 1,
-        borderTopColor: theme.border,
-        height: 60 + insets.bottom,
-        paddingBottom: insets.bottom,
-        paddingTop: 6,
-        elevation: 10,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: -3 },
-        shadowOpacity: colorScheme === "dark" ? 0.3 : 0.08,
-        shadowRadius: 10,
-      };
+    height: 60 + insets.bottom,
+    paddingBottom: insets.bottom,
+    paddingTop: 6,
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: colorScheme === "dark" ? 0.3 : 0.08,
+    shadowRadius: 10,
+  };
 
   return (
     <Tabs
@@ -43,6 +37,16 @@ export default function TabLayout() {
           fontWeight: "600",
           marginTop: 2,
         },
+        tabBarBackground: () => (
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: theme.card,
+              borderTopWidth: 1,
+              borderTopColor: theme.border,
+            }}
+          />
+        ),
       }}
     >
       {/* ── Visible tabs ── */}
@@ -76,7 +80,6 @@ export default function TabLayout() {
               />
             </View>
           ),
-          // Dynamic — null hides the badge when 0
           tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           tabBarBadgeStyle: {
             backgroundColor: "#FF3B30",
