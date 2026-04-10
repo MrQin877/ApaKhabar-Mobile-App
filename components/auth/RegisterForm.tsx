@@ -1,4 +1,3 @@
-// ── Register form component for the login screen ──
 import { router } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -13,6 +12,8 @@ export function RegisterForm() {
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
   const {
+    name,
+    setName,
     email,
     setEmail,
     password,
@@ -23,10 +24,11 @@ export function RegisterForm() {
     errors,
     register,
     clearErrors,
+    clearFieldError, // ✅ New
   } = useAuth();
 
   const handleRegister = () => {
-    clearErrors();
+    clearErrors(); // clears general error before each submit attempt
     register();
   };
 
@@ -37,32 +39,45 @@ export function RegisterForm() {
       </Text>
 
       <AuthInput
+        placeholder="Nama Pengguna"
+        value={name}
+        onChangeText={(text: string) => {
+          setName(text);
+          clearFieldError("name");
+        }}
+        error={errors.name}
+      />
+      
+      {/* ✅ Only clears email error when user types in email field */}
+      <AuthInput
         placeholder={AUTH_STRINGS.emailPlaceholder}
         value={email}
         onChangeText={(text: string) => {
           setEmail(text);
-          clearErrors();
+          clearFieldError("email");
         }}
         error={errors.email}
       />
 
+      {/* ✅ Only clears password error when user types in password field */}
       <AuthInput
         placeholder={AUTH_STRINGS.passwordPlaceholder}
         value={password}
         onChangeText={(text: string) => {
           setPassword(text);
-          clearErrors();
+          clearFieldError("password");
         }}
         secureTextEntry
         error={errors.password}
       />
 
+      {/* ✅ Only clears confirmPassword error when user types here */}
       <AuthInput
         placeholder={AUTH_STRINGS.confirmPasswordPlaceholder}
         value={confirmPassword}
         onChangeText={(text: string) => {
           setConfirmPassword(text);
-          clearErrors();
+          clearFieldError("confirmPassword");
         }}
         secureTextEntry
         error={errors.confirmPassword}

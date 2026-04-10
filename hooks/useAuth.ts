@@ -4,11 +4,17 @@ import { VALIDATION_RULES } from "../constants/authData";
 import { login as apiLogin, register as apiRegister } from "../services/authService";
 
 export function useAuth() {
+  const [name, setName] = useState("");             // ✅ Was missing
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateName = (value: string) => {         // ✅ Was missing
+    if (!value) return "Nama diperlukan";
+    return "";
+  };
 
   const validateEmail = (value: string) => {
     if (!value) return VALIDATION_RULES.email.required;
@@ -29,6 +35,12 @@ export function useAuth() {
     return "";
   };
 
+  const clearErrors = () => setErrors({});
+
+  const clearFieldError = (field: string) => {
+    setErrors(prev => ({ ...prev, [field]: "" }));
+  };
+
   const login = async () => {
     const emailError = validateEmail(email);
     const passwordError = validatePassword(password);
@@ -39,7 +51,7 @@ export function useAuth() {
     setLoading(true);
     setErrors({});
     try {
-      await apiLogin(email, password); // ← calls Laravel /api/login
+      await apiLogin(email, password);
       router.replace("/(tabs)");
     } catch (error: any) {
       const message = error?.response?.data?.message || "Log masuk gagal";
@@ -50,11 +62,14 @@ export function useAuth() {
   };
 
   const register = async () => {
+    const nameError = validateName(name);           // ✅ Was missing
     const emailError = validateEmail(email);
     const passwordError = validatePassword(password);
     const confirmError = validateConfirmPassword(confirmPassword);
-    if (emailError || passwordError || confirmError) {
+
+    if (nameError || emailError || passwordError || confirmError) {
       setErrors({
+        name: nameError,                            // ✅ Was missing
         email: emailError,
         password: passwordError,
         confirmPassword: confirmError,
@@ -64,7 +79,7 @@ export function useAuth() {
     setLoading(true);
     setErrors({});
     try {
-      await apiRegister(email, password, email); // ← calls Laravel /api/register
+      await apiRegister(name, email, password, confirmPassword); // ✅ Fixed: now 4 args
       router.replace("/(tabs)");
     } catch (error: any) {
       const message = error?.response?.data?.message || "Pendaftaran gagal";
@@ -74,9 +89,9 @@ export function useAuth() {
     }
   };
 
-  const clearErrors = () => setErrors({});
-
   return {
+    name,
+    setName,
     email,
     setEmail,
     password,
@@ -88,5 +103,6 @@ export function useAuth() {
     login,
     register,
     clearErrors,
+    clearFieldError,
   };
 }

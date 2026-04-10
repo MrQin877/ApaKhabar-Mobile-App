@@ -23,33 +23,33 @@ const clearToken = async () => {
   }
 };
 
+// ✅ Named export — required by useAuth.ts
 export const login = async (email: string, password: string) => {
   const response = await api.post("/login", { email, password });
   await saveToken(response.data.token, response.data.user);
-  await registerPushToken(); // ← add here
-
-  // 🔍 DEBUG
+  await registerPushToken();
   console.log(
     "[AUTH] ✅ Login OK |",
     response.data.user?.email,
     "| role:",
     response.data.user?.role,
   );
-
   return response.data;
 };
 
+// ✅ Named export — required by useAuth.ts
 export const register = async (
   name: string,
   email: string,
   password: string,
+  confirmPassword: string,
 ) => {
-  const response = await api.post("/register", { name, email, password });
-  await saveToken(response.data.token, response.data.user);
-
-  // 🔍 DEBUG
-  console.log("[AUTH] ✅ Register OK |", response.data.user?.email);
-
+  const response = await api.post("/register", {
+    name,
+    email,
+    password,
+    password_confirmation: confirmPassword,
+  });
   return response.data;
 };
 
