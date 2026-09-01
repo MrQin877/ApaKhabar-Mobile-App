@@ -1,12 +1,12 @@
-import { router } from 'expo-router';
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { AUTH_STRINGS } from '../../constants/authData';
-import { getTheme } from '../../constants/theme';
-import { useColorScheme } from '../../hooks/use-color-scheme';
-import { useAuth } from '../../hooks/useAuth';
-import { AuthButton } from './AuthButton';
-import { AuthInput } from './AuthInput';
+import { router } from "expo-router";
+import React, { useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { getTheme } from "../../constants/theme";
+import { useColorScheme } from "../../hooks/use-color-scheme";
+import { useAuth } from "../../hooks/useAuth";
+import { Checkbox } from "../ui/checkbox";
+import { AuthButton } from "./AuthButton";
+import { AuthInput } from "./AuthInput";
 
 export function LoginForm() {
   const colorScheme = useColorScheme();
@@ -21,6 +21,8 @@ export function LoginForm() {
     login,
     clearErrors,
   } = useAuth();
+  const [rememberMe, setRememberMe] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
 
   const handleLogin = () => {
     clearErrors();
@@ -29,60 +31,110 @@ export function LoginForm() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.title, { color: theme.text }]}>
-        {AUTH_STRINGS.loginTitle}
-      </Text>
-
-      <AuthInput
-        placeholder={AUTH_STRINGS.emailPlaceholder}
-        value={email}
-        onChangeText={(text: string) => {
-          setEmail(text);
-          clearErrors();
-        }}
-        error={errors.email}
-      />
-
-      <AuthInput
-        placeholder={AUTH_STRINGS.passwordPlaceholder}
-        value={password}
-        onChangeText={(text: string) => {
-          setPassword(text);
-          clearErrors();
-        }}
-        secureTextEntry
-        error={errors.password}
-      />
-
-      {errors.general && (
-        <Text style={[styles.error, { color: theme.error }]}>
-          {errors.general}
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: theme.text }]}>
+          Log masuk ke akun anda
         </Text>
+        <Text style={[styles.description, { color: theme.secondary }]}>
+          Masukkan e-mail dan kata sandi anda untuk log masuk
+        </Text>
+      </View>
+
+      {/* Status Message */}
+      {status && (
+        <View
+          style={[
+            styles.statusContainer,
+            { backgroundColor: theme.primary + "20" },
+          ]}
+        >
+          <Text style={[styles.statusText, { color: theme.primary }]}>
+            {status}
+          </Text>
+        </View>
       )}
 
-      <AuthButton
-        title={AUTH_STRINGS.loginButton}
-        onPress={handleLogin}
-        loading={loading}
-      />
+      {/* Form Fields */}
+      <View style={styles.formContainer}>
+        {/* Email/Phone Field */}
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.label, { color: theme.text }]}>
+            Alamat e-mail atau nombor telefon
+          </Text>
+          <AuthInput
+            placeholder="email@contoh.com atau +60123456789"
+            value={email}
+            onChangeText={(text: string) => {
+              setEmail(text);
+              clearErrors();
+            }}
+            error={errors.email}
+          />
+          {errors.email && (
+            <Text style={[styles.fieldError, { color: theme.error }]}>
+              {errors.email}
+            </Text>
+          )}
+        </View>
 
-      {/* ✅ Wired to forgot password screen */}
-      <TouchableOpacity
-        style={styles.link}
-        onPress={() => router.push('/(auth)/forgot-password')}
-      >
-        <Text style={[styles.linkText, { color: theme.primary }]}>
-          {AUTH_STRINGS.forgotPassword}
-        </Text>
-      </TouchableOpacity>
+        {/* Password Field */}
+        <View style={styles.fieldGroup}>
+          <View style={styles.passwordLabelRow}>
+            <Text style={[styles.label, { color: theme.text }]}>
+              Kata sandi
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push("/(auth)/forgot-password")}
+            >
+              <Text style={[styles.forgotLink, { color: theme.primary }]}>
+                Lupa kata sandi?
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <AuthInput
+            placeholder="Kata sandi"
+            value={password}
+            onChangeText={(text: string) => {
+              setPassword(text);
+              clearErrors();
+            }}
+            secureTextEntry
+            error={errors.password}
+          />
+          {errors.password && (
+            <Text style={[styles.fieldError, { color: theme.error }]}>
+              {errors.password}
+            </Text>
+          )}
+        </View>
 
+        {/* Remember Me Checkbox */}
+        <Checkbox
+          value={rememberMe}
+          onValueChange={setRememberMe}
+          label="Ingat saya"
+        />
+
+        {/* General Error */}
+        {errors.general && (
+          <Text style={[styles.generalError, { color: theme.error }]}>
+            {errors.general}
+          </Text>
+        )}
+
+        {/* Login Button */}
+        <AuthButton title="Log masuk" onPress={handleLogin} loading={loading} />
+      </View>
+
+      {/* Register Link */}
       <View style={styles.footer}>
         <Text style={[styles.footerText, { color: theme.secondary }]}>
-          {AUTH_STRINGS.noAccount}{' '}
+          Belum ada akun?{" "}
         </Text>
-        <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-          <Text style={[styles.linkText, { color: theme.primary }]}>
-            {AUTH_STRINGS.signUp}
+        <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
+          <Text style={[styles.registerLink, { color: theme.primary }]}>
+            Daftar sekarang
           </Text>
         </TouchableOpacity>
       </View>
@@ -94,33 +146,69 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    justifyContent: 'center',
+    justifyContent: "flex-start",
+    paddingTop: 32,
+  },
+  header: {
+    marginBottom: 32,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 14,
+  },
+  statusContainer: {
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 24,
+  },
+  statusText: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  formContainer: {
+    gap: 24,
     marginBottom: 32,
   },
-  error: {
-    textAlign: 'center',
-    marginBottom: 16,
-    fontSize: 14,
+  fieldGroup: {
+    gap: 8,
   },
-  link: {
-    alignSelf: 'center',
-    marginTop: 16,
-  },
-  linkText: {
+  label: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
+  },
+  passwordLabelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  forgotLink: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  fieldError: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  generalError: {
+    textAlign: "center",
+    fontSize: 14,
+    fontWeight: "600",
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 24,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 4,
   },
   footerText: {
     fontSize: 14,
+  },
+  registerLink: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
