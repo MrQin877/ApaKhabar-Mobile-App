@@ -5,7 +5,15 @@ export const getNotifications = async () => {
     console.log("Fetching notifications...");
     const response = await api.get("/notifications");
     console.log("Notifications response:", response.data);
-    return response.data;
+
+    const payload = response.data;
+    const notifications = Array.isArray(payload?.notifications)
+      ? payload.notifications
+      : Array.isArray(payload)
+        ? payload
+        : [];
+
+    return notifications;
   } catch (error: any) {
     console.error("Notification error:", error?.response?.status);
     console.error(

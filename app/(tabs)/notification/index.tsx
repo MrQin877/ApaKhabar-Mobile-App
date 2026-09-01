@@ -64,7 +64,8 @@ export default function NotificationScreen() {
       setLoading(true);
       setError(null);
       const data = await getNotifications();
-      const mapped: Notification[] = data.map((n: any) => ({
+      const items = Array.isArray(data) ? data : [];
+      const mapped: Notification[] = items.map((n: any) => ({
         id: n.id,
         type:
           n.type === "darurat"
