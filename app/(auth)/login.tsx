@@ -1,4 +1,5 @@
 // ──  Login ──
+import { useLocalSearchParams } from "expo-router";
 import React from "react";
 import { StatusBar, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -10,6 +11,7 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
+  const { successMessage } = useLocalSearchParams<{ successMessage?: string }>();
 
   return (
     <View
@@ -21,7 +23,7 @@ export default function LoginScreen() {
       <StatusBar
         barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
       />
-      <LoginForm />
+      <LoginForm initialStatus={successMessage ?? null} />
     </View>
   );
 }

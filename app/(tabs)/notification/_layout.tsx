@@ -1,5 +1,4 @@
-import { useNavigation } from "@react-navigation/native";
-import { Stack, usePathname } from "expo-router";
+import { Stack, useNavigation, usePathname } from "expo-router";
 import { useLayoutEffect } from "react";
 
 export default function NotificationLayout() {

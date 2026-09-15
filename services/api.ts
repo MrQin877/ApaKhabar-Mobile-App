@@ -1,10 +1,15 @@
 import axios from "axios";
+import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 const BASE_URL = Platform.select({
-  web: "http://localhost:8000/api",
-  default: process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api",
+  web: process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api",
+  default:
+    process.env.EXPO_PUBLIC_API_URL ??
+    (Platform.OS === "android"
+      ? "http://10.0.2.2:8000/api"
+      : "http://localhost:8000/api"),
 });
 
 const api = axios.create({
@@ -15,6 +20,16 @@ const api = axios.create({
   },
 });
 
+const clearStoredAuth = async () => {
+  if (Platform.OS === "web") {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user");
+  } else {
+    await SecureStore.deleteItemAsync("auth_token");
+    await SecureStore.deleteItemAsync("user");
+  }
+};
+
 api.interceptors.request.use(async (config: any) => {
   let token = null;
 
@@ -24,11 +39,28 @@ api.interceptors.request.use(async (config: any) => {
     token = await SecureStore.getItemAsync("auth_token");
   }
 
-  console.log("Auth token:", token ? "EXISTS" : "NULL"); // ← add this
-  console.log("Request URL:", config.url); // ← add this
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
 
-  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error?.response?.status === 401) {
+      await clearStoredAuth();
+
+      try {
+        router.replace("/(auth)/login");
+      } catch {
+        // Ignore navigation errors during startup when router may not be ready.
+      }
+    }
+
+    return Promise.reject(error);
+  },
+);
 
 export default api;

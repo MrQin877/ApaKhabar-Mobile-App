@@ -49,7 +49,12 @@ export default function ResetPasswordScreen() {
     setLoading(true);
     try {
       await resetPassword(token, email, password, confirm);
-      setDone(true);
+      router.replace({
+        pathname: "/(auth)/login",
+        params: {
+          successMessage: "Kata sandi berjaya ditukar. Sila log masuk.",
+        },
+      });
     } catch (err: any) {
       setError(
         err?.response?.data?.message ??

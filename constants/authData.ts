@@ -24,7 +24,7 @@ export const VALIDATION_RULES = {
   },
   password: {
     required: "Kata laluan diperlukan",
-    minLength: 6,
-    message: "Kata laluan mesti sekurang-kurangnya 6 aksara",
+    minLength: 8,
+    message: "Kata laluan mesti sekurang-kurangnya 8 aksara",
   },
 };

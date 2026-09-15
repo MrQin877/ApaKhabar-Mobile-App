@@ -8,7 +8,11 @@ import { Checkbox } from "../ui/checkbox";
 import { AuthButton } from "./AuthButton";
 import { AuthInput } from "./AuthInput";
 
-export function LoginForm() {
+export function LoginForm({
+  initialStatus,
+}: {
+  initialStatus?: string | null;
+}) {
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
   const {
@@ -22,7 +26,7 @@ export function LoginForm() {
     clearErrors,
   } = useAuth();
   const [rememberMe, setRememberMe] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(initialStatus ?? null);
 
   const handleLogin = () => {
     clearErrors();

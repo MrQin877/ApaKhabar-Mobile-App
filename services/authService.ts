@@ -6,10 +6,18 @@ import { registerPushToken } from "./pushToken";
 const saveToken = async (token: string, user: any) => {
   if (Platform.OS === "web") {
     localStorage.setItem("auth_token", token);
-    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem("user", JSON.stringify(user ?? {}));
   } else {
     await SecureStore.setItemAsync("auth_token", token);
-    await SecureStore.setItemAsync("user", JSON.stringify(user));
+    await SecureStore.setItemAsync("user", JSON.stringify(user ?? {}));
+  }
+};
+
+const saveUser = async (user: any) => {
+  if (Platform.OS === "web") {
+    localStorage.setItem("user", JSON.stringify(user ?? {}));
+  } else {
+    await SecureStore.setItemAsync("user", JSON.stringify(user ?? {}));
   }
 };
 
@@ -23,33 +31,67 @@ const clearToken = async () => {
   }
 };
 
-// ✅ Named export — required by useAuth.ts
-export const login = async (email: string, password: string) => {
-  const response = await api.post("/login", { email, password });
+const parseIdentifierPayload = (identifier: string) => {
+  const trimmed = identifier.trim();
+
+  if (trimmed.includes("@")) {
+    return { email: trimmed };
+  }
+
+  return { phone: trimmed };
+};
+
+export const login = async (identifier: string, password: string) => {
+  const payload: Record<string, string> = { password };
+  const parsed = parseIdentifierPayload(identifier);
+
+  if (parsed.email) {
+    payload.email = parsed.email;
+  }
+
+  if (parsed.phone) {
+    payload.phone = parsed.phone;
+  }
+
+  const response = await api.post("/login", payload);
   await saveToken(response.data.token, response.data.user);
   await registerPushToken();
+
   console.log(
     "[AUTH] ✅ Login OK |",
-    response.data.user?.email,
+    response.data.user?.email ?? response.data.user?.phone,
     "| role:",
     response.data.user?.role,
   );
+
   return response.data;
 };
 
-// ✅ Named export — required by useAuth.ts
 export const register = async (
   name: string,
-  email: string,
+  email: string | undefined,
   password: string,
   confirmPassword: string,
+  phone?: string,
 ) => {
-  const response = await api.post("/register", {
+  const payload: Record<string, string | undefined> = {
     name,
-    email,
     password,
     password_confirmation: confirmPassword,
-  });
+  };
+
+  if (email && email.trim()) {
+    payload.email = email.trim();
+  }
+
+  if (phone && phone.trim()) {
+    payload.phone = phone.trim();
+  }
+
+  const response = await api.post("/register", payload);
+  await saveToken(response.data.token, response.data.user);
+  await registerPushToken();
+
   return response.data;
 };
 
@@ -84,6 +126,12 @@ export const getToken = async () => {
   } else {
     return await SecureStore.getItemAsync("auth_token");
   }
+};
+
+export const getProfile = async () => {
+  const response = await api.get("/profile");
+  await saveUser(response.data);
+  return response.data;
 };
 
 export const forgotPassword = async (email: string) => {

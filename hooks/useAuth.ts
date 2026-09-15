@@ -2,12 +2,32 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { VALIDATION_RULES } from "../constants/authData";
 import {
-    login as apiLogin,
-    register as apiRegister,
+  login as apiLogin,
+  register as apiRegister,
 } from "../services/authService";
 
+const getServerErrorMessage = (error: any) => {
+  const data = error?.response?.data;
+
+  if (data?.message) return data.message;
+
+  if (data?.errors) {
+    const firstError = Object.values(data.errors)[0];
+
+    if (Array.isArray(firstError) && firstError.length > 0) {
+      return firstError[0];
+    }
+
+    if (typeof firstError === "string") {
+      return firstError;
+    }
+  }
+
+  return "Permintaan gagal. Sila cuba lagi.";
+};
+
 export function useAuth() {
-  const [name, setName] = useState(""); // ✅ Was missing
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -16,24 +36,42 @@ export function useAuth() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validateName = (value: string) => {
-    // ✅ Was missing
-    if (!value) return "Nama diperlukan";
+    if (!value.trim()) return "Nama diperlukan";
     return "";
   };
 
   const validateEmail = (value: string) => {
-    if (!value) return VALIDATION_RULES.email.required;
-    if (!VALIDATION_RULES.email.pattern.test(value))
+    if (!value.trim()) return VALIDATION_RULES.email.required;
+    if (!VALIDATION_RULES.email.pattern.test(value.trim()))
       return VALIDATION_RULES.email.message;
     return "";
   };
 
   const validatePhone = (value: string) => {
-    if (!value) return "Nombor telefon diperlukan";
-    // Basic phone validation - at least 10 characters
-    const phoneClean = value.replace(/[^\d]/g, "");
-    if (phoneClean.length < 10) return "Nombor telefon tidak sah";
+    if (!value.trim()) return "Nombor telefon diperlukan";
+
+    const normalized = value.trim();
+    const phonePattern = /^\+?[1-9]\d{8,14}$/;
+
+    if (!phonePattern.test(normalized)) {
+      return "Nombor telefon tidak sah. Contoh: +60123456789";
+    }
+
     return "";
+  };
+
+  const validateIdentifier = (value: string) => {
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      return "Sila masukkan e-mel atau nombor telefon.";
+    }
+
+    if (trimmed.includes("@")) {
+      return validateEmail(trimmed);
+    }
+
+    return validatePhone(trimmed);
   };
 
   const validatePassword = (value: string) => {
@@ -44,6 +82,7 @@ export function useAuth() {
   };
 
   const validateConfirmPassword = (value: string) => {
+    if (!value) return "Sila sahkan kata laluan";
     if (value !== password) return "Kata laluan tidak sepadan";
     return "";
   };
@@ -55,68 +94,60 @@ export function useAuth() {
   };
 
   const login = async () => {
-    const emailError = validateEmail(email);
+    const identifierError = validateIdentifier(email);
     const passwordError = validatePassword(password);
-    if (emailError || passwordError) {
-      setErrors({ email: emailError, password: passwordError });
+
+    if (identifierError || passwordError) {
+      setErrors({
+        email: identifierError,
+        password: passwordError,
+      });
       return;
     }
+
     setLoading(true);
     setErrors({});
+
     try {
-      await apiLogin(email, password);
+      await apiLogin(email.trim(), password);
       router.replace("/(tabs)");
     } catch (error: any) {
-      const message = error?.response?.data?.message || "Log masuk gagal";
-      setErrors({ general: message });
+      setErrors({ general: getServerErrorMessage(error) });
     } finally {
       setLoading(false);
     }
   };
 
   const register = async () => {
-    const nameError = validateName(name); // ✅ Was missing
-    const emailError = validateEmail(email);
-    const phoneError = validatePhone(phone);
+    const nameError = validateName(name);
+    const emailError = email.trim() ? validateEmail(email) : "";
+    const phoneError = phone.trim() ? validatePhone(phone) : "";
     const passwordError = validatePassword(password);
     const confirmError = validateConfirmPassword(confirmPassword);
 
-    // Validate either email or phone is provided
-    if (!email && !phone) {
+    const hasAnyIdentifier = !!email.trim() || !!phone.trim();
+
+    if (!hasAnyIdentifier) {
       setErrors({
         name: nameError,
-        email: "E-mel atau nombor telefon diperlukan",
-        phone: "E-mel atau nombor telefon diperlukan",
+        email: "Sila masukkan e-mel atau nombor telefon.",
+        phone: "Sila masukkan e-mel atau nombor telefon.",
         password: passwordError,
         confirmPassword: confirmError,
       });
       return;
     }
 
-    if (nameError || passwordError || confirmError) {
+    if (
+      nameError ||
+      emailError ||
+      phoneError ||
+      passwordError ||
+      confirmError
+    ) {
       setErrors({
         name: nameError,
         email: emailError,
-        phone: phoneError,
-        password: passwordError,
-        confirmPassword: confirmError,
-      });
-      return;
-    }
-
-    if (email && emailError) {
-      setErrors({
-        name: nameError,
-        email: emailError,
-        password: passwordError,
-        confirmPassword: confirmError,
-      });
-      return;
-    }
-
-    if (phone && phoneError) {
-      setErrors({
-        name: nameError,
         phone: phoneError,
         password: passwordError,
         confirmPassword: confirmError,
@@ -126,12 +157,18 @@ export function useAuth() {
 
     setLoading(true);
     setErrors({});
+
     try {
-      await apiRegister(name, email || phone, password, confirmPassword);
+      await apiRegister(
+        name.trim(),
+        email.trim() || undefined,
+        password,
+        confirmPassword,
+        phone.trim() || undefined,
+      );
       router.replace("/(tabs)");
     } catch (error: any) {
-      const message = error?.response?.data?.message || "Pendaftaran gagal";
-      setErrors({ general: message });
+      setErrors({ general: getServerErrorMessage(error) });
     } finally {
       setLoading(false);
     }
