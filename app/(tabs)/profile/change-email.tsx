@@ -1,145 +1,85 @@
-import React, { useState } from 'react';
-import {
-  View, Text, StyleSheet, TouchableOpacity, StatusBar, TextInput,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, ScrollView, Text, TextInput, View, StyleSheet } from 'react-native';
+import { router, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthButton } from '../../../components/auth/AuthButton';
+import { ApprovedBadge } from '../../../components/profile/ApprovedBadge';
+import { useVerifiedProfile } from '../../../hooks/useVerifiedProfile';
+import { updateProfile } from '../../../services/authService';
+import { resendVerification, verificationError } from '../../../services/emailVerification';
 import { getTheme } from '../../../constants/theme';
 import { useColorScheme } from '../../../hooks/use-color-scheme';
-import api from '../../../services/api';
 
 export default function ChangeEmailScreen() {
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const theme = getTheme(colorScheme);
+  const theme = getTheme(useColorScheme());
+  const { user, loading, confirmed, error, refresh } = useVerifiedProfile();
+  const [draft, setDraft] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const [actionError, setActionError] = useState('');
+  const pending = useRef(false);
+  const email = draft ?? user?.email ?? '';
+  const dirty = email !== (user?.email ?? '');
+  const approved = confirmed && !dirty && !!user?.email && !!user.email_verified_at;
 
-  const [newEmail, setNewEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-
-  const handleSubmit = async () => {
-    setError('');
-    if (!newEmail || !password) {
-      setError('Sila isi semua ruangan.');
-      return;
-    }
-    setLoading(true);
+  async function save() {
+    if (pending.current || !user) return;
+    pending.current = true;
+    setBusy(true);
+    setMessage('');
+    setActionError('');
     try {
-      await api.post('/api/change-email', { email: newEmail, password });
-      setSuccess(true);
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Gagal menukar e-mel.');
+      await updateProfile(user.name, email.trim());
+      setDraft(null);
+      await refresh();
+      setMessage('Alamat e-mail disimpan. Anda sekarang boleh mengirim email konfirmasi.');
+    } catch (err) {
+      setActionError(verificationError(err));
     } finally {
-      setLoading(false);
+      pending.current = false;
+      setBusy(false);
     }
-  };
+  }
 
-  if (success) {
-    return (
-      <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-        <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
-        <View style={styles.successPage}>
-          <View style={styles.successTop}>
-            <View style={[styles.successIconCircle, { backgroundColor: '#3FCC5420' }]}>
-              <Ionicons name="checkmark-circle" size={56} color="#3FCC54" />
-            </View>
-            <Text style={[styles.successTitle, { color: theme.text }]}>E-mel Berjaya Ditukar!</Text>
-            <Text style={[styles.successSubtitle, { color: theme.secondary }]}>
-              E-mel akaun anda telah dikemaskini kepada
-            </Text>
-            <Text style={[styles.successEmail, { color: '#3FCC54' }]}>{newEmail}</Text>
-          </View>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="arrow-back-outline" size={14} color="#3FCC54" />
-            <Text style={[styles.backBtnText, { color: '#3FCC54' }]}>Kembali ke Profil</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
+  async function resend() {
+    if (pending.current || dirty) return;
+    pending.current = true;
+    setBusy(true);
+    setActionError('');
+    try {
+      await resendVerification();
+      router.push('/verify-email' as Href);
+    } catch (err) {
+      setActionError(verificationError(err));
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
-
-      <TouchableOpacity style={styles.back} onPress={() => router.back()}>
-        <Ionicons name="arrow-back" size={22} color={theme.text} />
-      </TouchableOpacity>
-
-      <View style={styles.inner}>
-        <View style={[styles.iconCircle, { backgroundColor: '#3FCC5420' }]}>
-          <Ionicons name="mail-outline" size={36} color="#3FCC54" />
-        </View>
-
-        <Text style={[styles.title, { color: theme.text }]}>Tukar E-mel</Text>
-        <Text style={[styles.subtitle, { color: theme.secondary }]}>
-          Masukkan e-mel baharu dan kata laluan semasa anda untuk mengesahkan perubahan.
-        </Text>
-
-        <View style={styles.formContainer}>
-          <Text style={[styles.label, { color: theme.text }]}>E-mel Baharu</Text>
-          <TextInput
-            style={[styles.input, { borderColor: error ? theme.error : theme.border, color: theme.text, backgroundColor: theme.background }]}
-            placeholder="email@contoh.com"
-            placeholderTextColor={theme.secondary}
-            value={newEmail}
-            onChangeText={(t) => { setNewEmail(t); setError(''); }}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-
-          <Text style={[styles.label, { color: theme.text, marginTop: 16 }]}>Kata Laluan Semasa</Text>
-          <View style={styles.passwordWrapper}>
-            <TextInput
-              style={[styles.passwordInput, { borderColor: error ? theme.error : theme.border, color: theme.text, backgroundColor: theme.background }]}
-              placeholder="••••••••"
-              placeholderTextColor={theme.secondary}
-              value={password}
-              onChangeText={(t) => { setPassword(t); setError(''); }}
-              secureTextEntry={!showPassword}
-            />
-            <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowPassword(!showPassword)}>
-              <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={theme.secondary} />
-            </TouchableOpacity>
-          </View>
-
-          {error ? <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text> : null}
-
-          <View style={styles.buttonWrapper}>
-            <AuthButton title="Kemaskini E-mel" onPress={handleSubmit} loading={loading} />
-          </View>
-        </View>
+    <ScrollView style={{ backgroundColor: theme.background }} contentContainerStyle={[styles.page, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
+      <Text style={[styles.title, { color: theme.text }]}>Alamat e-mail</Text>
+      <Text style={{ color: theme.text }}>Simpan perubahan sebelum mengirim email konfirmasi.</Text>
+      {loading && <ActivityIndicator color="#16803d" />}
+      <TextInput accessibilityLabel="Alamat e-mail" value={email} onChangeText={setDraft} editable={!!user && !busy && !loading} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" placeholder="email@contoh.com" placeholderTextColor={theme.secondary} style={[styles.input, { borderColor: theme.border, color: theme.text }]} />
+      {approved && <ApprovedBadge />}
+      {!!(actionError || error) && <Text accessibilityRole="alert" style={{ color: theme.error }}>{actionError || error}</Text>}
+      {!!message && <Text accessibilityLiveRegion="polite" style={{ color: theme.text }}>{message}</Text>}
+      {dirty && <Text style={{ color: theme.text }}>Perubahan belum disimpan.</Text>}
+      <View>
+        <AuthButton title="Simpan" onPress={save} loading={busy} disabled={loading || !confirmed || !dirty || !email.trim()} />
+        {user?.email && !user.email_verified_at && <AuthButton title="Klik di sini untuk mengirim ulang email konfirmasi." onPress={resend} disabled={busy || loading || dirty || !confirmed} />}
+        {!!error && <AuthButton title="Coba lagi" onPress={() => { void refresh(); }} disabled={busy || loading} />}
+        <AuthButton title="Kembali ke Profil" onPress={() => router.replace('/(tabs)/profile')} disabled={busy} />
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  back: { padding: 16 },
-  inner: { flex: 1, paddingHorizontal: 24, paddingTop: 8, alignItems: 'center' },
-  iconCircle: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
-  title: { fontSize: 22, fontWeight: '700', marginBottom: 10, textAlign: 'center' },
-  subtitle: { fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 28 },
-  formContainer: { width: '100%' },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 8, marginLeft: 2 },
-  input: { width: '100%', height: 52, borderWidth: 1, borderRadius: 10, paddingHorizontal: 16, fontSize: 15 },
-  passwordWrapper: { position: 'relative', width: '100%' },
-  passwordInput: { width: '100%', height: 52, borderWidth: 1, borderRadius: 10, paddingHorizontal: 16, paddingRight: 48, fontSize: 15 },
-  eyeBtn: { position: 'absolute', right: 14, top: 16 },
-  errorText: { fontSize: 12, marginTop: 4, marginLeft: 2 },
-  buttonWrapper: { marginTop: 24, marginBottom: 8 },
-  successPage: { flex: 1, paddingHorizontal: 24, paddingBottom: 40, justifyContent: 'space-between' },
-  successTop: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 },
-  successIconCircle: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  successTitle: { fontSize: 22, fontWeight: '700', textAlign: 'center' },
-  successSubtitle: { fontSize: 14, textAlign: 'center', lineHeight: 22 },
-  successEmail: { fontSize: 15, fontWeight: '700', textAlign: 'center' },
-  backBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  backBtnText: { fontSize: 14, fontWeight: '600' },
+  page: { flexGrow: 1, paddingHorizontal: 24, gap: 16 },
+  title: { fontSize: 26, fontWeight: '700' },
+  input: { height: 52, borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, fontSize: 16 },
 });

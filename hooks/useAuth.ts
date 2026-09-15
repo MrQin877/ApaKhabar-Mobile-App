@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { VALIDATION_RULES } from "../constants/authData";
 import {
   login as apiLogin,
@@ -27,6 +27,7 @@ const getServerErrorMessage = (error: any) => {
 };
 
 export function useAuth() {
+  const submitting = useRef(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -94,6 +95,7 @@ export function useAuth() {
   };
 
   const login = async () => {
+    if (submitting.current) return;
     const identifierError = validateIdentifier(email);
     const passwordError = validatePassword(password);
 
@@ -105,20 +107,22 @@ export function useAuth() {
       return;
     }
 
+    submitting.current = true;
     setLoading(true);
     setErrors({});
 
     try {
       await apiLogin(email.trim(), password);
-      router.replace("/(tabs)");
+      router.replace("/(tabs)/news_content");
     } catch (error: any) {
       setErrors({ general: getServerErrorMessage(error) });
-    } finally {
+      submitting.current = false;
       setLoading(false);
     }
   };
 
   const register = async () => {
+    if (submitting.current) return;
     const nameError = validateName(name);
     const emailError = email.trim() ? validateEmail(email) : "";
     const phoneError = phone.trim() ? validatePhone(phone) : "";
@@ -155,6 +159,7 @@ export function useAuth() {
       return;
     }
 
+    submitting.current = true;
     setLoading(true);
     setErrors({});
 
@@ -166,10 +171,10 @@ export function useAuth() {
         confirmPassword,
         phone.trim() || undefined,
       );
-      router.replace("/(tabs)");
+      router.replace("/(tabs)/news_content");
     } catch (error: any) {
       setErrors({ general: getServerErrorMessage(error) });
-    } finally {
+      submitting.current = false;
       setLoading(false);
     }
   };

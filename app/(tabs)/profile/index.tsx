@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   StatusBar, ActivityIndicator, Modal, Pressable, Animated,
@@ -6,8 +6,11 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { getUser, logout } from '../../../services/authService';
+import { router, type Href } from 'expo-router';
+import { logout } from '../../../services/authService';
+import { useVerifiedProfile } from '../../../hooks/useVerifiedProfile';
+import { ApprovedBadge } from '../../../components/profile/ApprovedBadge';
+import { resendVerification, verificationError } from '../../../services/emailVerification';
 import { getTheme } from '../../../constants/theme';
 import { useColorScheme } from '../../../hooks/use-color-scheme';
 import { useAppearance } from '../../../context/AppearanceContext';
@@ -25,13 +28,15 @@ export default function Profil() {
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
 
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, confirmed, error, refresh } = useVerifiedProfile();
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
+  const resendPending = useRef(false);
   const { appearance, setAppearance } = useAppearance();
   const [modalVisible, setModalVisible] = useState(false);
 
-  const overlayAnim = useRef(new Animated.Value(0)).current;
-  const sheetAnim   = useRef(new Animated.Value(0)).current;
+  const [overlayAnim] = useState(() => new Animated.Value(0));
+  const [sheetAnim] = useState(() => new Animated.Value(0));
 
   const openModal = () => {
     setModalVisible(true);
@@ -50,9 +55,22 @@ export default function Profil() {
 
   const sheetTranslateY = sheetAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] });
 
-  useEffect(() => {
-    getUser().then(setUser).catch(console.error).finally(() => setLoading(false));
-  }, []);
+  const handleResend = async () => {
+    if (resendPending.current) return;
+    resendPending.current = true;
+    setSending(true);
+    setSendError('');
+    try {
+      const result = await resendVerification();
+      if (result.status === 'already-verified') await refresh();
+      router.push('/verify-email' as Href);
+    } catch (err) {
+      setSendError(verificationError(err));
+    } finally {
+      resendPending.current = false;
+      setSending(false);
+    }
+  };
 
   const handleLogout = async () => {
     try { await logout(); } catch (err) { console.error(err); } finally {
@@ -60,7 +78,7 @@ export default function Profil() {
     }
   };
 
-  if (loading) {
+  if (loading && !user) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }}>
         <ActivityIndicator size="large" color="#3FCC54" />
@@ -100,12 +118,20 @@ export default function Profil() {
                 <Ionicons name="mail-outline" size={18} color="#3FCC54" />
               </View>
               <View style={styles.rowText}>
-                <Text style={[styles.rowLabel, { color: theme.secondary }]}>Email</Text>
+                <Text style={[styles.rowLabel, { color: theme.secondary }]}>Alamat e-mail</Text>
                 <Text style={[styles.rowValue, { color: theme.text }]}>{user?.email ?? '-'}</Text>
+                {confirmed && user?.email && user.email_verified_at && <ApprovedBadge />}
               </View>
               <Ionicons name="chevron-forward" size={18} color="#3FCC54" />
             </TouchableOpacity>
 
+            {user?.email && !user.email_verified_at && (
+              <TouchableOpacity accessibilityRole="button" disabled={sending || !confirmed || loading} onPress={handleResend} style={{ paddingBottom: 14, opacity: sending || !confirmed ? 0.5 : 1 }}>
+                <Text style={{ color: '#16803d', textDecorationLine: 'underline' }}>{sending ? 'Mengirim...' : 'Klik di sini untuk mengirim ulang email konfirmasi.'}</Text>
+              </TouchableOpacity>
+            )}
+            {!!(sendError || error) && <Text accessibilityRole="alert" style={{ color: theme.error, paddingBottom: 12 }}>{sendError || error}</Text>}
+            {!!error && <TouchableOpacity onPress={() => { void refresh(); }}><Text style={{ color: theme.text, paddingBottom: 12 }}>Coba lagi</Text></TouchableOpacity>}
             <View style={styles.divider} />
 
             <TouchableOpacity style={styles.row} activeOpacity={0.7} onPress={() => router.push('/(tabs)/profile/change-phone')}>
@@ -115,13 +141,14 @@ export default function Profil() {
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: theme.secondary }]}>Nombor Telefon</Text>
                 {hasPhone ? (
-                  <Text style={[styles.rowValue, { color: theme.text }]}>{user.phone}</Text>
+                  <Text style={[styles.rowValue, { color: theme.text }]}>{user?.phone}</Text>
                 ) : (
                   <View style={styles.phoneMissing}>
                     <Ionicons name="alert-circle-outline" size={13} color="#F59E0B" />
                     <Text style={styles.phoneMissingText}>Nombor telefon belum didaftarkan</Text>
                   </View>
                 )}
+                {confirmed && user?.phone && user.phone_verified_at && <ApprovedBadge />}
               </View>
               <Ionicons name="chevron-forward" size={18} color="#3FCC54" />
             </TouchableOpacity>

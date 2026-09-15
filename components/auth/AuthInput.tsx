@@ -3,6 +3,7 @@ import React from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import { getTheme } from "../../constants/theme";
 import { useColorScheme } from "../../hooks/use-color-scheme";
+import { PasswordInput } from "./PasswordInput";
 
 interface AuthInputProps {
   placeholder: string;
@@ -21,10 +22,11 @@ export function AuthInput({
 }: AuthInputProps) {
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
+  const Input = secureTextEntry ? PasswordInput : TextInput;
 
   return (
     <View style={styles.container}>
-      <TextInput
+      <Input
         style={[
           styles.input,
           {
@@ -36,7 +38,6 @@ export function AuthInput({
         placeholderTextColor={theme.secondary}
         value={value}
         onChangeText={onChangeText}
-        secureTextEntry={secureTextEntry}
         autoCapitalize="none"
         autoCorrect={false}
       />

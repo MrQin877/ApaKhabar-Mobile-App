@@ -168,7 +168,7 @@ export function RegisterForm() {
         <Text style={[styles.footerText, { color: theme.secondary }]}>
           Sudah ada akun?{" "}
         </Text>
-        <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
+        <TouchableOpacity disabled={loading} onPress={() => router.replace("/(auth)/login")}>
           <Text style={[styles.loginLink, { color: theme.primary }]}>
             Log masuk
           </Text>

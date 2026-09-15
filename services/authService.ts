@@ -55,7 +55,7 @@ export const login = async (identifier: string, password: string) => {
 
   const response = await api.post("/login", payload);
   await saveToken(response.data.token, response.data.user);
-  await registerPushToken();
+  void registerPushToken();
 
   console.log(
     "[AUTH] ✅ Login OK |",
@@ -90,7 +90,7 @@ export const register = async (
 
   const response = await api.post("/register", payload);
   await saveToken(response.data.token, response.data.user);
-  await registerPushToken();
+  void registerPushToken();
 
   return response.data;
 };
@@ -128,8 +128,24 @@ export const getToken = async () => {
   }
 };
 
-export const getProfile = async () => {
-  const response = await api.get("/profile");
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  role: string | null;
+  email_verified_at: string | null;
+  phone_verified_at: string | null;
+}
+
+export const updateProfile = async (name: string, email: string): Promise<UserProfile> => {
+  const response = await api.patch('/profile', { name, email }, { timeout: 15000 });
+  await saveUser(response.data);
+  return response.data;
+};
+
+export const getProfile = async (): Promise<UserProfile> => {
+  const response = await api.get("/profile", { timeout: 15000 });
   await saveUser(response.data);
   return response.data;
 };

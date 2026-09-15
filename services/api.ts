@@ -30,14 +30,19 @@ const clearStoredAuth = async () => {
   }
 };
 
-api.interceptors.request.use(async (config: any) => {
-  let token = null;
-
+const getStoredToken = async () => {
   if (Platform.OS === "web") {
-    token = localStorage.getItem("auth_token");
-  } else {
-    token = await SecureStore.getItemAsync("auth_token");
+    return localStorage.getItem("auth_token");
   }
+  return SecureStore.getItemAsync("auth_token");
+};
+
+const isAuthRequest = (url?: string) =>
+  ['/login', '/register', '/forgot-password', '/reset-password'].includes(url ?? '');
+
+api.interceptors.request.use(async (config: any) => {
+  if (isAuthRequest(config.url)) return config;
+  const token = await getStoredToken();
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -46,16 +51,27 @@ api.interceptors.request.use(async (config: any) => {
   return config;
 });
 
+let invalidatingSession = false;
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error?.response?.status === 401) {
-      await clearStoredAuth();
-
+    // Invalid credentials belong on the current form. Only expire the session
+    // when a protected request used the token that is still stored now.
+    if (error?.response?.status === 401 && !isAuthRequest(error.config?.url)) {
+      const authorization = error.config?.headers?.Authorization;
+      const currentToken = await getStoredToken();
+      if (!currentToken || authorization !== `Bearer ${currentToken}` || invalidatingSession) {
+        return Promise.reject(error);
+      }
+      invalidatingSession = true;
       try {
+        await clearStoredAuth();
         router.replace("/(auth)/login");
       } catch {
         // Ignore navigation errors during startup when router may not be ready.
+      } finally {
+        invalidatingSession = false;
       }
     }
 

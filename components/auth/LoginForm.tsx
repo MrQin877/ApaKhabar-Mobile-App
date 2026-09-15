@@ -26,7 +26,7 @@ export function LoginForm({
     clearErrors,
   } = useAuth();
   const [rememberMe, setRememberMe] = useState(false);
-  const [status, setStatus] = useState<string | null>(initialStatus ?? null);
+  const [status] = useState<string | null>(initialStatus ?? null);
 
   const handleLogin = () => {
     clearErrors();
@@ -89,7 +89,8 @@ export function LoginForm({
               Kata sandi
             </Text>
             <TouchableOpacity
-              onPress={() => router.push("/(auth)/forgot-password")}
+              disabled={loading}
+              onPress={() => router.navigate("/(auth)/forgot-password")}
             >
               <Text style={[styles.forgotLink, { color: theme.primary }]}>
                 Lupa kata sandi?
@@ -136,7 +137,7 @@ export function LoginForm({
         <Text style={[styles.footerText, { color: theme.secondary }]}>
           Belum ada akun?{" "}
         </Text>
-        <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
+        <TouchableOpacity disabled={loading} onPress={() => router.replace("/(auth)/register")}>
           <Text style={[styles.registerLink, { color: theme.primary }]}>
             Daftar sekarang
           </Text>

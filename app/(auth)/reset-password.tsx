@@ -5,12 +5,12 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AuthButton } from "../../components/auth/AuthButton";
+import { PasswordInput } from "../../components/auth/PasswordInput";
 import { getTheme } from "../../constants/theme";
 import { useColorScheme } from "../../hooks/use-color-scheme";
 import { resetPassword } from "../../services/authService";
@@ -114,7 +114,8 @@ export default function ResetPasswordScreen() {
             <Text style={[styles.label, { color: theme.text }]}>
               Kata Sandi Baharu
             </Text>
-            <TextInput
+            <PasswordInput
+              accessibilityLabel="Kata Sandi Baharu"
               style={[
                 styles.input,
                 {
@@ -130,7 +131,6 @@ export default function ResetPasswordScreen() {
                 setPassword(t);
                 setError("");
               }}
-              secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -139,7 +139,8 @@ export default function ResetPasswordScreen() {
             <Text style={[styles.label, { color: theme.text, marginTop: 16 }]}>
               Sahkan Kata Sandi
             </Text>
-            <TextInput
+            <PasswordInput
+              accessibilityLabel="Sahkan Kata Sandi"
               style={[
                 styles.input,
                 {
@@ -155,7 +156,6 @@ export default function ResetPasswordScreen() {
                 setConfirm(t);
                 setError("");
               }}
-              secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
             />

@@ -1,11 +1,10 @@
-import { Redirect, useRouter } from "expo-router";
+import { Redirect, type Href } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { getProfile, getToken } from "../services/authService";
 
 export default function Index() {
-  const router = useRouter();
-  const [ready, setReady] = useState(false);
+  const [destination, setDestination] = useState<Href | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -15,18 +14,18 @@ export default function Index() {
         const token = await getToken();
 
         if (!token) {
-          if (active) router.replace("/(auth)/welcome");
+          if (active) setDestination("/(auth)/welcome");
           return;
         }
 
         try {
           await getProfile();
-          if (active) router.replace("/(tabs)");
+          if (active) setDestination("/(tabs)/news_content");
         } catch {
-          if (active) router.replace("/(auth)/login");
+          if (active) setDestination("/(auth)/login");
         }
-      } finally {
-        if (active) setReady(true);
+      } catch {
+        if (active) setDestination("/(auth)/login");
       }
     };
 
@@ -35,9 +34,9 @@ export default function Index() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, []);
 
-  if (!ready) {
+  if (!destination) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />
@@ -45,5 +44,5 @@ export default function Index() {
     );
   }
 
-  return <Redirect href="/(auth)/welcome" />;
+  return <Redirect href={destination} />;
 }

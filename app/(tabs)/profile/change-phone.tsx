@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthButton } from '../../../components/auth/AuthButton';
+import { PhoneNumberInput } from '../../../components/phone-number-input';
 import { getTheme } from '../../../constants/theme';
 import { useColorScheme } from '../../../hooks/use-color-scheme';
 import api from '../../../services/api';
@@ -28,8 +29,8 @@ export default function ChangePhoneScreen() {
       setError('Sila isi semua ruangan.');
       return;
     }
-    if (!/^(\+?6?01)[0-9]{8,9}$/.test(phone.replace(/\s/g, ''))) {
-      setError('Format nombor telefon tidak sah. Contoh: 0123456789');
+    if (!/^\+(60|62)[1-9]\d{6,12}$/.test(phone)) {
+      setError('Format nombor telefon tidak sah. Contoh: +60123456789 atau +628123456789.');
       return;
     }
     setLoading(true);
@@ -87,13 +88,10 @@ export default function ChangePhoneScreen() {
 
         <View style={styles.formContainer}>
           <Text style={[styles.label, { color: theme.text }]}>Nombor Telefon</Text>
-          <TextInput
-            style={[styles.input, { borderColor: error ? theme.error : theme.border, color: theme.text, backgroundColor: theme.background }]}
-            placeholder="0123456789"
-            placeholderTextColor={theme.secondary}
+          <PhoneNumberInput
             value={phone}
             onChangeText={(t) => { setPhone(t); setError(''); }}
-            keyboardType="phone-pad"
+            editable={!loading}
           />
 
           <Text style={[styles.label, { color: theme.text, marginTop: 16 }]}>Kata Laluan Semasa</Text>
@@ -131,7 +129,6 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 28 },
   formContainer: { width: '100%' },
   label: { fontSize: 14, fontWeight: '600', marginBottom: 8, marginLeft: 2 },
-  input: { width: '100%', height: 52, borderWidth: 1, borderRadius: 10, paddingHorizontal: 16, fontSize: 15 },
   passwordWrapper: { position: 'relative', width: '100%' },
   passwordInput: { width: '100%', height: 52, borderWidth: 1, borderRadius: 10, paddingHorizontal: 16, paddingRight: 48, fontSize: 15 },
   eyeBtn: { position: 'absolute', right: 14, top: 16 },

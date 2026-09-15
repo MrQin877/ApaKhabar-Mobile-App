@@ -9,12 +9,14 @@ import {
 } from "react-native";
 import { getTheme } from "../constants/theme";
 import { useColorScheme } from "../hooks/use-color-scheme";
+import { formatPhoneNumber, getNationalPhoneNumber, getPhoneCountry, type PhoneCountry } from "../utils/phoneNumber";
 
 interface PhoneNumberInputProps {
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
   error?: string;
+  editable?: boolean;
 }
 
 const COUNTRY_CODES = {
@@ -35,32 +37,29 @@ export function PhoneNumberInput({
   onChangeText,
   placeholder = "123456789",
   error,
+  editable = true,
 }: PhoneNumberInputProps) {
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
-  const [countryCode, setCountryCode] = useState<"MY" | "ID">("MY");
+  const [selectedCode, setCountryCode] = useState<PhoneCountry>("MY");
+  const countryCode = getPhoneCountry(value) ?? selectedCode;
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
   const handlePhoneChange = (text: string) => {
-    // Allow only numbers
-    const cleaned = text.replace(/[^\d]/g, "");
-    const fullNumber = COUNTRY_CODES[countryCode].code + cleaned;
-    onChangeText(fullNumber);
+    const nextCountry = getPhoneCountry(text) ?? countryCode;
+    setCountryCode(nextCountry);
+    onChangeText(formatPhoneNumber(text, nextCountry));
   };
 
-  const handleCountryChange = (code: "MY" | "ID") => {
+  const handleCountryChange = (code: PhoneCountry) => {
+    if (!editable) return;
     setCountryCode(code);
     setDropdownVisible(false);
-    // Update the phone number with new country code if there's a number
-    if (value) {
-      const phoneOnly = value.replace(/[^\d]/g, "");
-      const newNumber = COUNTRY_CODES[code].code + phoneOnly;
-      onChangeText(newNumber);
-    }
+    onChangeText(formatPhoneNumber(value, code));
   };
 
   // Extract just the number part for display in input
-  const phoneNumberOnly = value.replace(/[^\d]/g, "");
+  const phoneNumberOnly = getNationalPhoneNumber(value);
   const selectedCountry = COUNTRY_CODES[countryCode];
 
   return (
@@ -76,6 +75,10 @@ export function PhoneNumberInput({
       >
         {/* Country Dropdown */}
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={`Pilih negara: ${selectedCountry.name} ${selectedCountry.code}`}
+          accessibilityState={{ disabled: !editable, expanded: dropdownVisible }}
+          disabled={!editable}
           onPress={() => setDropdownVisible(true)}
           style={[
             styles.countryDropdown,
@@ -100,6 +103,8 @@ export function PhoneNumberInput({
             {selectedCountry.code}
           </Text>
           <TextInput
+            accessibilityLabel="Nombor telefon"
+            editable={editable}
             style={[
               styles.input,
               {
@@ -137,6 +142,10 @@ export function PhoneNumberInput({
             {Object.entries(COUNTRY_CODES).map(([key, country]) => (
               <TouchableOpacity
                 key={key}
+                accessibilityRole="button"
+                accessibilityLabel={`${country.name} ${country.code}`}
+                accessibilityState={{ selected: countryCode === key, disabled: !editable }}
+                disabled={!editable}
                 onPress={() => handleCountryChange(key as "MY" | "ID")}
                 style={[
                   styles.dropdownItem,
@@ -188,6 +197,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   countryDropdown: {
+    maxWidth: '52%',
+    flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
@@ -201,7 +212,7 @@ const styles = StyleSheet.create({
   countryName: {
     fontSize: 14,
     fontWeight: "600",
-    flex: 1,
+    flexShrink: 1,
   },
   dropdownArrow: {
     fontSize: 10,
@@ -209,6 +220,7 @@ const styles = StyleSheet.create({
   },
   phoneInputContainer: {
     flex: 1,
+    minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
@@ -220,6 +232,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    minWidth: 0,
     paddingVertical: 12,
     fontSize: 16,
   },

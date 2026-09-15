@@ -37,7 +37,7 @@ export const WelcomeActions: React.FC<WelcomeActionsProps> = ({
       {/* Primary — filled gradient */}
       <AuthButton
         title={AUTH_STRINGS.signIn}
-        onPress={() => router.push("/(auth)/login")}
+        onPress={() => router.navigate("/(auth)/login")}
       />
 
       {/* Secondary — outline */}
@@ -53,7 +53,7 @@ export const WelcomeActions: React.FC<WelcomeActionsProps> = ({
             alignItems: "center",
           },
         ]}
-        onPress={() => router.push("/(auth)/register")}
+        onPress={() => router.navigate("/(auth)/register")}
         activeOpacity={0.85}
       >
         <Text

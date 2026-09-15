@@ -16,7 +16,21 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export async function registerPushToken(): Promise<void> {
+let registration: Promise<void> | null = null;
+
+export function registerPushToken(): Promise<void> {
+  if (registration) return registration;
+  registration = registerDevicePushToken()
+    .catch(() => {
+      console.warn('Push notifications could not be configured. Your login is still valid.');
+    })
+    .finally(() => { registration = null; });
+  return registration;
+}
+
+async function registerDevicePushToken(): Promise<void> {
+  // Push setup is optional and unavailable on web and Expo Go.
+  if (Platform.OS === 'web' || Constants.executionEnvironment === 'storeClient') return;
   if (!Device.isDevice) return;
 
   // Check if user has a token first
@@ -65,7 +79,6 @@ export async function registerPushToken(): Promise<void> {
   });
 
   const token = tokenData.data;
-  console.log("Push token:", token);
 
   // Save to Laravel backend
   try {
