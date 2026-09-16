@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, StatusBar, TextInput,
+  View, Text, StyleSheet, TouchableOpacity, StatusBar,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PasswordInput } from '../../../components/auth/PasswordInput';
 import { AuthButton } from '../../../components/auth/AuthButton';
 import { PhoneNumberInput } from '../../../components/phone-number-input';
 import { getTheme } from '../../../constants/theme';
@@ -18,7 +19,6 @@ export default function ChangePhoneScreen() {
 
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -95,19 +95,14 @@ export default function ChangePhoneScreen() {
           />
 
           <Text style={[styles.label, { color: theme.text, marginTop: 16 }]}>Kata Laluan Semasa</Text>
-          <View style={styles.passwordWrapper}>
-            <TextInput
-              style={[styles.passwordInput, { borderColor: error ? theme.error : theme.border, color: theme.text, backgroundColor: theme.background }]}
-              placeholder="••••••••"
-              placeholderTextColor={theme.secondary}
-              value={password}
-              onChangeText={(t) => { setPassword(t); setError(''); }}
-              secureTextEntry={!showPassword}
-            />
-            <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowPassword(!showPassword)}>
-              <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={theme.secondary} />
-            </TouchableOpacity>
-          </View>
+          <PasswordInput
+            accessibilityLabel="Kata Laluan Semasa"
+            style={[styles.passwordInput, { borderColor: error ? theme.error : theme.border, color: theme.text, backgroundColor: theme.background }]}
+            placeholder="••••••••"
+            placeholderTextColor={theme.secondary}
+            value={password}
+            onChangeText={(t) => { setPassword(t); setError(''); }}
+          />
 
           {error ? <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text> : null}
 
@@ -129,9 +124,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 28 },
   formContainer: { width: '100%' },
   label: { fontSize: 14, fontWeight: '600', marginBottom: 8, marginLeft: 2 },
-  passwordWrapper: { position: 'relative', width: '100%' },
   passwordInput: { width: '100%', height: 52, borderWidth: 1, borderRadius: 10, paddingHorizontal: 16, paddingRight: 48, fontSize: 15 },
-  eyeBtn: { position: 'absolute', right: 14, top: 16 },
   errorText: { fontSize: 12, marginTop: 4, marginLeft: 2 },
   buttonWrapper: { marginTop: 24, marginBottom: 8 },
   successPage: { flex: 1, paddingHorizontal: 24, paddingBottom: 40, justifyContent: 'space-between' },

@@ -19,6 +19,7 @@ export default function VerifyEmailScreen() {
   const [sendError, setSendError] = useState('');
   const pending = useRef(false);
   const verified = confirmed && !!user?.email && !!user.email_verified_at;
+  const unverified = confirmed && !loading && !!user?.email && user.email_verified_at === null;
 
   async function resend() {
     if (pending.current) return;
@@ -42,7 +43,7 @@ export default function VerifyEmailScreen() {
     setMessage('');
     setSendError('');
     const profile = await refresh();
-    if (profile?.email && !profile.email_verified_at) setMessage('E-mail belum disahkan. Klik tautan terbaru di inbox anda, lalu coba lagi.');
+    if (profile?.email && profile.email_verified_at === null) setMessage('E-mail belum disahkan. Klik tautan terbaru di inbox anda, lalu coba lagi.');
   }
 
   return (
@@ -51,12 +52,13 @@ export default function VerifyEmailScreen() {
       <Text style={[styles.title, { color: theme.text }]}>Aktivasi e-mail</Text>
       {loading && <ActivityIndicator color="#16803d" />}
       <Text style={[styles.email, { color: theme.text }]}>{user?.email ?? 'Alamat e-mail belum tersedia'}</Text>
-      {verified ? <ApprovedBadge /> : <Text style={[styles.body, { color: theme.text }]}>Periksa inbox dan folder spam anda. Klik tautan email konfirmasi untuk mengaktifkan alamat e-mail yang tersimpan di Profil.</Text>}
+      {verified && <ApprovedBadge />}
+      {unverified && <Text style={[styles.body, { color: theme.text }]}>Periksa inbox dan folder spam anda. Klik tautan email konfirmasi untuk mengaktifkan alamat e-mail yang tersimpan di Profil.</Text>}
       {verified && <Text style={{ color: theme.text }}>Alamat e-mail anda telah disahkan.</Text>}
-      {!!message && <Text accessibilityLiveRegion="polite" style={{ color: theme.text }}>{message}</Text>}
+      {!!message && unverified && <Text accessibilityLiveRegion="polite" style={{ color: theme.text }}>{message}</Text>}
       {!!(sendError || error) && <Text accessibilityRole="alert" style={{ color: theme.error }}>{sendError || error}</Text>}
       <View style={{ width: '100%' }}>
-        {!verified && <AuthButton title="Kirim ulang email konfirmasi" onPress={resend} loading={sending} disabled={loading || !confirmed || !user?.email} />}
+        {unverified && <AuthButton title="Kirim ulang email konfirmasi" onPress={resend} loading={sending} disabled={loading || !confirmed || !user?.email} />}
         <AuthButton title="I have verified my email" onPress={check} loading={loading} disabled={sending} />
         <AuthButton title="Kembali ke Profil" onPress={() => router.replace('/(tabs)/profile')} disabled={sending} />
       </View>

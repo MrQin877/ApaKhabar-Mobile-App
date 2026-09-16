@@ -9,13 +9,38 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, type Href } from 'expo-router';
 import { logout } from '../../../services/authService';
 import { useVerifiedProfile } from '../../../hooks/useVerifiedProfile';
-import { ApprovedBadge } from '../../../components/profile/ApprovedBadge';
 import { resendVerification, verificationError } from '../../../services/emailVerification';
 import { getTheme } from '../../../constants/theme';
 import { useColorScheme } from '../../../hooks/use-color-scheme';
 import { useAppearance } from '../../../context/AppearanceContext';
 
 type AppearanceOption = 'system' | 'light' | 'dark';
+
+function ContactStatus({ value, verified, confirmed, textColor }: {
+  value?: string | null;
+  verified: boolean;
+  confirmed: boolean;
+  textColor: string;
+}) {
+  if (!confirmed) return null;
+  if (!value?.trim() || !verified) {
+    return (
+      <View style={styles.unverifiedStatus}>
+        <Ionicons name="alert-circle-outline" size={13} color="#F59E0B" />
+        <Text style={styles.unverifiedText}>Belum Diverifikasi</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.verifiedContact}>
+      <Text style={[styles.rowValue, { color: textColor }]}>{value.trim()}</Text>
+      <View style={styles.verifiedBadge} accessibilityLabel="Terverifikasi">
+        <Ionicons name="shield-checkmark" size={13} color="#16803d" />
+        <Text style={styles.verifiedText}>Terverifikasi</Text>
+      </View>
+    </View>
+  );
+}
 
 const APPEARANCE_OPTIONS: { value: AppearanceOption; label: string; icon: string }[] = [
   { value: 'system', label: 'Sistem', icon: 'phone-portrait-outline' },
@@ -86,7 +111,6 @@ export default function Profil() {
     );
   }
 
-  const hasPhone = !!user?.phone;
   const currentAppearance = APPEARANCE_OPTIONS.find(o => o.value === appearance)!;
 
   return (
@@ -119,13 +143,12 @@ export default function Profil() {
               </View>
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: theme.secondary }]}>Alamat e-mail</Text>
-                <Text style={[styles.rowValue, { color: theme.text }]}>{user?.email ?? '-'}</Text>
-                {confirmed && user?.email && user.email_verified_at && <ApprovedBadge />}
+                <ContactStatus value={user?.email} verified={!!user?.email_verified_at} confirmed={confirmed && !loading} textColor={theme.text} />
               </View>
               <Ionicons name="chevron-forward" size={18} color="#3FCC54" />
             </TouchableOpacity>
 
-            {user?.email && !user.email_verified_at && (
+            {confirmed && !loading && user?.email && user.email_verified_at === null && (
               <TouchableOpacity accessibilityRole="button" disabled={sending || !confirmed || loading} onPress={handleResend} style={{ paddingBottom: 14, opacity: sending || !confirmed ? 0.5 : 1 }}>
                 <Text style={{ color: '#16803d', textDecorationLine: 'underline' }}>{sending ? 'Mengirim...' : 'Klik di sini untuk mengirim ulang email konfirmasi.'}</Text>
               </TouchableOpacity>
@@ -140,18 +163,16 @@ export default function Profil() {
               </View>
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: theme.secondary }]}>Nombor Telefon</Text>
-                {hasPhone ? (
-                  <Text style={[styles.rowValue, { color: theme.text }]}>{user?.phone}</Text>
-                ) : (
-                  <View style={styles.phoneMissing}>
-                    <Ionicons name="alert-circle-outline" size={13} color="#F59E0B" />
-                    <Text style={styles.phoneMissingText}>Nombor telefon belum didaftarkan</Text>
-                  </View>
-                )}
-                {confirmed && user?.phone && user.phone_verified_at && <ApprovedBadge />}
+                <ContactStatus value={user?.phone} verified={!!user?.phone_verified_at} confirmed={confirmed && !loading} textColor={theme.text} />
               </View>
               <Ionicons name="chevron-forward" size={18} color="#3FCC54" />
             </TouchableOpacity>
+
+            {confirmed && !loading && user?.phone && user.phone_verified_at === null && (
+              <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/verify-phone' as Href)} style={{ paddingBottom: 14 }}>
+                <Text style={{ color: '#16803d', textDecorationLine: 'underline' }}>Sahkan nombor telefon melalui OTP.</Text>
+              </TouchableOpacity>
+            )}
 
           </View>
         </View>
@@ -281,9 +302,12 @@ const styles = StyleSheet.create({
   iconCircle: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#EEF9F1', alignItems: 'center', justifyContent: 'center' },
   rowText: { flex: 1 },
   rowLabel: { fontSize: 12, marginBottom: 2 },
-  rowValue: { fontSize: 14, fontWeight: '700' },
-  phoneMissing: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  phoneMissingText: { fontSize: 12, color: '#F59E0B', fontWeight: '600' },
+  rowValue: { fontSize: 14, fontWeight: '700', flexShrink: 1 },
+  unverifiedStatus: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  unverifiedText: { fontSize: 12, color: '#F59E0B', fontWeight: '600' },
+  verifiedContact: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
+  verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#eaf8ef', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 },
+  verifiedText: { color: '#16803d', fontSize: 11, fontWeight: '600' },
   divider: { height: 1, backgroundColor: '#F0F5F3', marginLeft: 52 },
   settingsLabel: { flex: 1, fontSize: 14, fontWeight: '700' },
 

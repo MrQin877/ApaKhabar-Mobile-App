@@ -70,7 +70,7 @@ export default function ChangeEmailScreen() {
       {dirty && <Text style={{ color: theme.text }}>Perubahan belum disimpan.</Text>}
       <View>
         <AuthButton title="Simpan" onPress={save} loading={busy} disabled={loading || !confirmed || !dirty || !email.trim()} />
-        {user?.email && !user.email_verified_at && <AuthButton title="Klik di sini untuk mengirim ulang email konfirmasi." onPress={resend} disabled={busy || loading || dirty || !confirmed} />}
+        {confirmed && !loading && user?.email && user.email_verified_at === null && <AuthButton title="Klik di sini untuk mengirim ulang email konfirmasi." onPress={resend} disabled={busy || loading || dirty || !confirmed} />}
         {!!error && <AuthButton title="Coba lagi" onPress={() => { void refresh(); }} disabled={busy || loading} />}
         <AuthButton title="Kembali ke Profil" onPress={() => router.replace('/(tabs)/profile')} disabled={busy} />
       </View>

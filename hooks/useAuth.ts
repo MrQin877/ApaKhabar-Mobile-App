@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
 import { useRef, useState } from "react";
 import { VALIDATION_RULES } from "../constants/authData";
 import {
@@ -164,14 +164,16 @@ export function useAuth() {
     setErrors({});
 
     try {
-      await apiRegister(
+      const result = await apiRegister(
         name.trim(),
         email.trim() || undefined,
         password,
         confirmPassword,
         phone.trim() || undefined,
       );
-      router.replace("/(tabs)/news_content");
+      router.replace((result.user?.phone && !result.user.phone_verified_at
+        ? "/verify-phone"
+        : "/(tabs)/news_content") as Href);
     } catch (error: any) {
       setErrors({ general: getServerErrorMessage(error) });
       submitting.current = false;

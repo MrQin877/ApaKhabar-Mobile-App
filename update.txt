@@ -1,0 +1,28 @@
+MOBILE PHONE OTP VERIFICATION - 2026-09-16
+
+Mobile files
+- app/verify-phone.tsx: new verification page styled like email verification; request/resend SMS OTP, six-digit input, submit, verified badge, errors, 60-second countdown and daily-limit message. Reloads server status on focus/foreground and restores cooldown after reopening or a timed-out request.
+- services/phoneVerification.ts: authenticated status/send/verify API calls with timeouts and rate-limit/error handling.
+- app/(tabs)/profile/index.tsx: verification link for a saved, unverified phone. Existing profile refresh displays the verified badge after returning.
+- hooks/useAuth.ts: successful phone registration opens Verify Phone; SMS is sent only when the user requests it.
+- .env (local only): API URL aligned with backend APP_URL, http://192.168.68.59:8000/api. Restart Expo to load this setting; the phone must reach that backend address.
+
+Laravel backend files (../ApaKhabar-Intelligence-Information-News-Management-System)
+- app/Http/Controllers/Auth/MobilePhoneVerificationController.php: new bearer-authenticated JSON status/send/verify handlers. Uses the saved phone, existing PhoneOtpRateLimiter, OtpNotification message and phones record. Random six-digit OTP expires after 10 minutes; success clears the OTP and sets phone_verified_at without changing email verification.
+- routes/api.php: GET /api/phone/verification-status, POST /api/phone/verification-notification, POST /api/phone/verify. Verify accepts { phone, otp }; send uses the authenticated user's saved number.
+- app/Services/SmsService.php: mobile-only sendMobileOtp method uses existing Bulk360 credentials/gateway, a 5-second connection and 15-second total timeout, and checks provider code 200. Existing sendSms and website controller/routes are unchanged.
+- tests/Feature/Auth/MobilePhoneVerificationTest.php: request limits, registration, verification, provider rejection, expired/incorrect/replaced codes and account isolation.
+- update.txt: this summary appended to the existing backend notes.
+
+Limits and behavior
+- Shared server-enforced 60-second cooldown and five requests per user/phone per calendar day, resetting at backend-local midnight. Failed delivery attempts count, matching the existing limiter. HTTP 429 returns retry information; the app asks users to try again tomorrow after the daily limit.
+- A valid pending OTP can still be verified after all five requests are used. Mobile wrong-code attempts are limited to five for ten minutes; a successful new OTP request resets this attempt counter. An additional route throttle limits verification traffic.
+- Server status restores cooldown/daily-limit state across app reloads. No database migration or provider credential change is required. Existing website phone verification code remains unchanged.
+- Bulk360 acceptance is checked against https://sms.360.my/developers/v3.0; acceptance does not guarantee handset delivery.
+
+Validation
+- 40 targeted backend tests passed (283 assertions): mobile OTP, existing web OTP limits, mobile email verification and password-reset verification.
+- ESLint passed for the changed mobile OTP files and entry points.
+- Full TypeScript checking remains blocked by errors in the nested starter app and unrelated existing components. No errors were reported in the OTP files.
+- Broader legacy RegistrationTest run has six failures using the obsolete users.email schema; those tests were not modified.
+- Provider requests were mocked. Real SMS delivery and an on-device walkthrough still need testing with the configured Bulk360 account.
