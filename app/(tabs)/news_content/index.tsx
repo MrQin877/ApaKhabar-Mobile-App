@@ -3,6 +3,8 @@ import { useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -135,7 +137,8 @@ export default function BeritaIndex() {
     !!featuredNews && matchesDateFilter(featuredNews.date ?? "", dateFilter);
 
   return (
-    <View
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={[
         styles.container,
         { paddingTop: insets.top, backgroundColor: theme.accent },
@@ -174,6 +177,8 @@ export default function BeritaIndex() {
 
       {!loading && !error && (
         <ScrollView
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           refreshControl={
@@ -211,7 +216,7 @@ export default function BeritaIndex() {
           )}
         </ScrollView>
       )}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -1,7 +1,7 @@
+import { KeyboardForm } from '../KeyboardForm';
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -44,7 +44,7 @@ export function RegisterForm() {
   };
 
   return (
-    <ScrollView
+    <KeyboardForm
       style={[styles.container, { backgroundColor: theme.background }]}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
@@ -174,7 +174,7 @@ export function RegisterForm() {
           </Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </KeyboardForm>
   );
 }
 

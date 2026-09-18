@@ -1,3 +1,4 @@
+import { KeyboardForm } from '../../../components/KeyboardForm';
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, StatusBar,
@@ -58,7 +59,7 @@ export default function ChangePasswordScreen() {
 
   if (success) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
+      <KeyboardForm style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
         <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
         <View style={styles.successPage}>
           <View style={styles.successTop}>
@@ -75,7 +76,7 @@ export default function ChangePasswordScreen() {
             <Text style={[styles.backBtnText, { color: '#3FCC54' }]}>Kembali ke Profil</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardForm>
     );
   }
 
@@ -94,7 +95,7 @@ export default function ChangePasswordScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
+    <KeyboardForm style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
 
       <TouchableOpacity style={styles.back} onPress={() => router.back()}>
@@ -128,14 +129,14 @@ export default function ChangePasswordScreen() {
           </View>
         </View>
       </View>
-    </View>
+    </KeyboardForm>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   back: { padding: 16 },
-  inner: { flex: 1, paddingHorizontal: 24, paddingTop: 8, alignItems: 'center' },
+  inner: { flexGrow: 1, flexShrink: 0, paddingHorizontal: 24, paddingTop: 8, alignItems: 'center' },
   iconCircle: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
   title: { fontSize: 22, fontWeight: '700', marginBottom: 10, textAlign: 'center' },
   subtitle: { fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 28 },

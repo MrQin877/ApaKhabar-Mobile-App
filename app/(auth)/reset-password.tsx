@@ -1,3 +1,5 @@
+import { resetPhonePassword } from '../../services/phonePasswordReset';
+import { KeyboardForm } from '../../components/KeyboardForm';
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
@@ -20,9 +22,11 @@ export default function ResetPasswordScreen() {
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
 
-  const { token, email } = useLocalSearchParams<{
+  const { token, email, phone, challenge } = useLocalSearchParams<{
     token: string;
     email: string;
+    phone?: string;
+    challenge?: string;
   }>();
 
   const [password, setPassword] = useState("");
@@ -41,14 +45,15 @@ export default function ResetPasswordScreen() {
       setError("Kata sandi tidak sepadan.");
       return;
     }
-    if (!token || !email) {
+    if (!token || (challenge ? !phone : !email)) {
       setError("Pautan tidak sah atau telah tamat tempoh.");
       return;
     }
 
     setLoading(true);
     try {
-      await resetPassword(token, email, password, confirm);
+      if (challenge) await resetPhonePassword(challenge, token, password, confirm);
+      else await resetPassword(token, email, password, confirm);
       router.replace({
         pathname: "/(auth)/login",
         params: {
@@ -66,7 +71,7 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <View
+    <KeyboardForm
       style={[
         styles.container,
         { backgroundColor: theme.background, paddingTop: insets.top },
@@ -90,12 +95,12 @@ export default function ResetPasswordScreen() {
         </View>
 
         <Text style={[styles.title, { color: theme.text }]}>
-          Tetapkan Kata Sandi
+          {challenge ? 'Tetapkan Semula Kata Laluan' : 'Tetapkan Kata Sandi'}
         </Text>
         <Text style={[styles.subtitle, { color: theme.secondary }]}>
           {"Masukkan kata sandi baharu untuk "}
           <Text style={{ fontWeight: "700", color: theme.text }}>
-            {email ?? "-"}
+            {phone ?? email ?? "-"}
           </Text>
         </Text>
 
@@ -208,7 +213,7 @@ export default function ResetPasswordScreen() {
           </TouchableOpacity>
         )}
       </View>
-    </View>
+    </KeyboardForm>
   );
 }
 
@@ -216,7 +221,8 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   back: { padding: 16 },
   inner: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 0,
     paddingHorizontal: 24,
     paddingTop: 8,
     alignItems: "center",

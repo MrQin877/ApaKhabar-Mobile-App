@@ -1,5 +1,6 @@
+import { KeyboardForm } from '../../../components/KeyboardForm';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, TextInput, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, Text, TextInput, View, StyleSheet } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthButton } from '../../../components/auth/AuthButton';
@@ -59,7 +60,7 @@ export default function ChangeEmailScreen() {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: theme.background }} contentContainerStyle={[styles.page, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
+    <KeyboardForm style={{ backgroundColor: theme.background }} contentContainerStyle={[styles.page, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
       <Text style={[styles.title, { color: theme.text }]}>Alamat e-mail</Text>
       <Text style={{ color: theme.text }}>Simpan perubahan sebelum mengirim email konfirmasi.</Text>
       {loading && <ActivityIndicator color="#16803d" />}
@@ -74,7 +75,7 @@ export default function ChangeEmailScreen() {
         {!!error && <AuthButton title="Coba lagi" onPress={() => { void refresh(); }} disabled={busy || loading} />}
         <AuthButton title="Kembali ke Profil" onPress={() => router.replace('/(tabs)/profile')} disabled={busy} />
       </View>
-    </ScrollView>
+    </KeyboardForm>
   );
 }
 

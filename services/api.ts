@@ -38,7 +38,7 @@ const getStoredToken = async () => {
 };
 
 const isAuthRequest = (url?: string) =>
-  ['/login', '/register', '/forgot-password', '/reset-password'].includes(url ?? '');
+  ['/login', '/register', '/forgot-password', '/reset-password'].includes(url ?? '') || (url ?? '').startsWith('/phone/password/');
 
 api.interceptors.request.use(async (config: any) => {
   if (isAuthRequest(config.url)) return config;

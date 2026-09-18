@@ -1,3 +1,4 @@
+import { KeyboardForm } from '../KeyboardForm';
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -34,7 +35,7 @@ export function LoginForm({
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <KeyboardForm style={{ backgroundColor: theme.background }} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>
@@ -143,13 +144,13 @@ export function LoginForm({
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardForm>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     padding: 24,
     justifyContent: "flex-start",
     paddingTop: 32,
