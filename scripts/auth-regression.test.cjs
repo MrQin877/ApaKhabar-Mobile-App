@@ -160,6 +160,7 @@ test('401 handling preserves credential errors and newer sessions, but expires t
   const routes = [];
   const storage = new Map([['auth_token', 'new-token'], ['user', '{}']]);
   load('services/api.ts', {
+    './apiConfig': { API_BASE_URL: 'http://localhost:8000/api' },
     axios: { create: () => ({ interceptors: {
       request: { use: handler => { requestHandler = handler; } },
       response: { use: (_, handler) => { rejectHandler = handler; } },

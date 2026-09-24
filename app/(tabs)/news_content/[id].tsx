@@ -16,6 +16,7 @@ import { IconSymbol } from "../../../components/ui/icon-symbol";
 import { getTheme } from "../../../constants/theme";
 import { useColorScheme } from "../../../hooks/use-color-scheme";
 import api from "../../../services/api";
+import { BACKEND_BASE_URL } from "../../../services/apiConfig";
 
 const { width } = Dimensions.get("window");
 
@@ -42,7 +43,7 @@ interface RelatedItem {
 function resolveImage(image: string): string {
   if (!image) return "https://placehold.co/800x400";
   if (image.startsWith("http://") || image.startsWith("https://")) return image;
-  return `${process.env.EXPO_PUBLIC_API_URL?.replace("/api", "")}/storage/${image}`;
+  return `${BACKEND_BASE_URL}/storage/${image}`;
 }
 
 export default function NewsDetailPage() {

@@ -3,17 +3,10 @@ import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
-const BASE_URL = Platform.select({
-  web: process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api",
-  default:
-    process.env.EXPO_PUBLIC_API_URL ??
-    (Platform.OS === "android"
-      ? "http://10.0.2.2:8000/api"
-      : "http://localhost:8000/api"),
-});
+import { API_BASE_URL } from "./apiConfig";
 
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",

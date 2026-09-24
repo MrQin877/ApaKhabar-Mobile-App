@@ -1,14 +1,15 @@
 import api from './api';
+import { API_BASE_URL } from './apiConfig';
 
 export const getNewsList = async (category?: string) => {
   try {
-    console.log('Fetching from:', process.env.EXPO_PUBLIC_API_URL);
+    console.log('Fetching from:', API_BASE_URL);
     const params = category ? { category } : {};
     const response = await api.get('/news', { params });
     return response.data;
   } catch (error: any) {
     console.error('API Error:', error.message);
-    console.error('API URL:', process.env.EXPO_PUBLIC_API_URL);
+    console.error('API URL:', API_BASE_URL);
     throw error;
   }
 };
