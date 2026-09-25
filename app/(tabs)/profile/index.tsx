@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  StatusBar, ActivityIndicator, Modal, Pressable, Animated,
+  StatusBar, ActivityIndicator, Modal, Pressable, Animated, Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,7 +27,7 @@ function ContactStatus({ value, verified, confirmed, textColor }: {
     return (
       <View style={styles.unverifiedStatus}>
         <Ionicons name="alert-circle-outline" size={13} color="#F59E0B" />
-        <Text style={styles.unverifiedText}>Belum Diverifikasi</Text>
+        <Text style={styles.unverifiedText}>{Platform.OS === 'web' ? 'Belum Diverifikasi' : 'Belum diverifikasi'}</Text>
       </View>
     );
   }
@@ -148,7 +148,7 @@ export default function Profil() {
               <Ionicons name="chevron-forward" size={18} color="#3FCC54" />
             </TouchableOpacity>
 
-            {confirmed && !loading && user?.email && user.email_verified_at === null && (
+            {Platform.OS === 'web' && confirmed && !loading && user?.email && user.email_verified_at === null && (
               <TouchableOpacity accessibilityRole="button" disabled={sending || !confirmed || loading} onPress={handleResend} style={{ paddingBottom: 14, opacity: sending || !confirmed ? 0.5 : 1 }}>
                 <Text style={{ color: '#16803d', textDecorationLine: 'underline' }}>{sending ? 'Mengirim...' : 'Klik di sini untuk mengirim ulang email konfirmasi.'}</Text>
               </TouchableOpacity>

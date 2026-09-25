@@ -1,11 +1,12 @@
-import { useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View, StyleSheet } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, ScrollView, Text, View, StyleSheet, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthButton } from '../components/auth/AuthButton';
 import { ApprovedBadge } from '../components/profile/ApprovedBadge';
 import { useVerifiedProfile } from '../hooks/useVerifiedProfile';
+import { completeEmailRegistration, hasPendingEmailRegistration } from '../services/authService';
 import { resendVerification, verificationError } from '../services/emailVerification';
 import { getTheme } from '../constants/theme';
 import { useColorScheme } from '../hooks/use-color-scheme';
@@ -18,6 +19,24 @@ export default function VerifyEmailScreen() {
   const [message, setMessage] = useState('');
   const [sendError, setSendError] = useState('');
   const pending = useRef(false);
+  const [registrationPending, setRegistrationPending] = useState<boolean | null>(Platform.OS === 'web' ? false : null);
+
+  useEffect(() => {
+    let active = true;
+    hasPendingEmailRegistration()
+      .then(value => { if (active) setRegistrationPending(value); })
+      .catch(() => { if (active) setRegistrationPending(true); });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!confirmed || !user?.email_verified_at || !registrationPending) return;
+    let active = true;
+    completeEmailRegistration(user)
+      .then(completed => { if (active && completed) router.replace('/(tabs)/news_content'); })
+      .catch(err => { if (active) setSendError(verificationError(err)); });
+    return () => { active = false; };
+  }, [confirmed, user, registrationPending]);
   const verified = confirmed && !!user?.email && !!user.email_verified_at;
   const unverified = confirmed && !loading && !!user?.email && user.email_verified_at === null;
 
@@ -60,7 +79,7 @@ export default function VerifyEmailScreen() {
       <View style={{ width: '100%' }}>
         {unverified && <AuthButton title="Kirim ulang email konfirmasi" onPress={resend} loading={sending} disabled={loading || !confirmed || !user?.email} />}
         <AuthButton title="I have verified my email" onPress={check} loading={loading} disabled={sending} />
-        <AuthButton title="Kembali ke Profil" onPress={() => router.replace('/(tabs)/profile')} disabled={sending} />
+        {registrationPending === false && <AuthButton title="Kembali ke Profil" onPress={() => router.replace('/(tabs)/profile')} disabled={sending} />}
       </View>
     </ScrollView>
   );

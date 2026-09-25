@@ -67,6 +67,22 @@ export const login = async (identifier: string, password: string) => {
   return response.data;
 };
 
+const EMAIL_REGISTRATION_KEY = "pending_email_registration";
+
+export const hasPendingEmailRegistration = async (): Promise<boolean> => {
+  if (Platform.OS === "web") return false;
+  const email = await SecureStore.getItemAsync(EMAIL_REGISTRATION_KEY);
+  return !!email && (await getUser())?.email === email;
+};
+
+// Only pass a freshly fetched server profile, never cached verification data.
+export const completeEmailRegistration = async (profile: UserProfile): Promise<boolean> => {
+  if (Platform.OS === "web" || !profile.email || !profile.email_verified_at) return false;
+  if (await SecureStore.getItemAsync(EMAIL_REGISTRATION_KEY) !== profile.email) return false;
+  await SecureStore.deleteItemAsync(EMAIL_REGISTRATION_KEY);
+  return true;
+};
+
 export const register = async (
   name: string,
   email: string | undefined,
@@ -89,6 +105,9 @@ export const register = async (
   }
 
   const response = await api.post("/register", payload);
+  if (Platform.OS !== "web" && payload.email) {
+    await SecureStore.setItemAsync(EMAIL_REGISTRATION_KEY, response.data.user?.email ?? payload.email);
+  }
   await saveToken(response.data.token, response.data.user);
   void registerPushToken();
 

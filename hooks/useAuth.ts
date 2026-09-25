@@ -1,5 +1,6 @@
 import { router, type Href } from "expo-router";
 import { useRef, useState } from "react";
+import { Platform } from "react-native";
 import { VALIDATION_RULES } from "../constants/authData";
 import {
   login as apiLogin,
@@ -171,7 +172,9 @@ export function useAuth() {
         confirmPassword,
         phone.trim() || undefined,
       );
-      router.replace((result.user?.phone && !result.user.phone_verified_at
+      router.replace((Platform.OS !== "web" && email.trim()
+        ? "/verify-email"
+        : result.user?.phone && !result.user.phone_verified_at
         ? "/verify-phone"
         : "/(tabs)/news_content") as Href);
     } catch (error: any) {

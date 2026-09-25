@@ -1,6 +1,8 @@
 import { useNotificationCount } from "@/context/NotificationContext";
-import { Tabs } from "expo-router";
-import { View } from "react-native";
+import { Redirect, Tabs, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import { Platform, View } from "react-native";
+import { hasPendingEmailRegistration } from "../../services/authService";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "../../components/ui/icon-symbol";
 import { getTheme } from "../../constants/theme";
@@ -11,6 +13,21 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
   const { unreadCount } = useNotificationCount();
+  const [registrationPending, setRegistrationPending] = useState<boolean | null>(Platform.OS === "web" ? false : null);
+
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    if (Platform.OS !== "web") {
+      setRegistrationPending(null);
+      hasPendingEmailRegistration()
+        .then(pending => { if (active) setRegistrationPending(pending); })
+        .catch(() => { if (active) setRegistrationPending(true); });
+    }
+    return () => { active = false; };
+  }, []));
+
+  if (registrationPending === null) return null;
+  if (registrationPending) return <Redirect href="/verify-email" />;
 
   const tabBarStyle = {
     height: 60 + insets.bottom,
