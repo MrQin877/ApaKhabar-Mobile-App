@@ -1,11 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Animated } from "react-native";
 
 export const useWelcomeAnimations = () => {
-  const fadeTop = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(-16)).current;
-  const fadeButtons = useRef(new Animated.Value(0)).current;
-  const translateB = useRef(new Animated.Value(24)).current;
+  const [fadeTop] = useState(() => new Animated.Value(0));
+  const [translateY] = useState(() => new Animated.Value(-16));
+  const [fadeButtons] = useState(() => new Animated.Value(0));
+  const [translateB] = useState(() => new Animated.Value(24));
 
   useEffect(() => {
     Animated.sequence([
@@ -34,7 +34,7 @@ export const useWelcomeAnimations = () => {
         }),
       ]),
     ]).start();
-  }, []);
+  }, [fadeButtons, fadeTop, translateB, translateY]);
 
   return {
     fadeTop,

@@ -1,6 +1,7 @@
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
+import { AndroidImportance } from "expo-notifications";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import api from "./api";
@@ -58,7 +59,7 @@ async function registerDevicePushToken(): Promise<void> {
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
       name: "ApaKhabar",
-      importance: Notifications.AndroidImportance.MAX,
+      importance: AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: "#16a34a",
     });
@@ -66,7 +67,7 @@ async function registerDevicePushToken(): Promise<void> {
     // Emergency channel
     await Notifications.setNotificationChannelAsync("darurat", {
       name: "Alert Darurat",
-      importance: Notifications.AndroidImportance.MAX,
+      importance: AndroidImportance.MAX,
       vibrationPattern: [0, 500, 250, 500],
       lightColor: "#ef4444",
       sound: "default",

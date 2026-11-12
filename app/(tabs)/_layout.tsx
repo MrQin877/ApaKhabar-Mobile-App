@@ -1,17 +1,18 @@
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { PressableFeedback } from "heroui-native/pressable-feedback";
 import { useNotificationCount } from "@/context/NotificationContext";
-import { Redirect, Tabs, useFocusEffect } from "expo-router";
+import { Redirect, Tabs, useFocusEffect, useSegments } from "expo-router";
 import { useCallback, useState } from "react";
 import { Platform, View } from "react-native";
 import { hasPendingEmailRegistration } from "../../services/authService";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "../../components/ui/icon-symbol";
-import { getTheme } from "../../constants/theme";
-import { useColorScheme } from "../../hooks/use-color-scheme";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const theme = getTheme(colorScheme);
+  const segments: readonly string[] = useSegments();
+  const hideNewsTabs = segments.includes("news_content") && (segments.at(-1) === "[id]" || segments.at(-1) === "search");
+  const theme = useAppTheme();
   const { unreadCount } = useNotificationCount();
   const [registrationPending, setRegistrationPending] = useState<boolean | null>(Platform.OS === "web" ? false : null);
 
@@ -33,24 +34,31 @@ export default function TabLayout() {
     height: 60 + insets.bottom,
     paddingBottom: insets.bottom,
     paddingTop: 6,
-    elevation: 10,
+    backgroundColor: theme.card,
+    borderTopColor: theme.border,
+    elevation: 0,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: colorScheme === "dark" ? 0.3 : 0.08,
+    shadowOpacity: 0,
     shadowRadius: 10,
   };
 
   return (
     <Tabs
-      key={colorScheme}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.secondary,
         tabBarShowLabel: true,
-        tabBarStyle,
+        tabBarButton: ({ children, ref, ...props }) => (
+          <PressableFeedback {...props} ref={node => {
+            if (typeof ref === "function") ref(node);
+            else if (ref) ref.current = node;
+          }}>{children}</PressableFeedback>
+        ),
+        tabBarStyle: hideNewsTabs ? { display: "none" } : tabBarStyle,
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 10,
           fontWeight: "600",
           marginTop: 2,
         },
@@ -66,18 +74,18 @@ export default function TabLayout() {
         ),
       }}
     >
-      {/* ── Visible tabs ── */}
+      {/* â”€â”€ Visible tabs â”€â”€ */}
       <Tabs.Screen
-        name="news_content/index"
+        name="news_content"
         options={{
           title: "Berita",
           tabBarLabel: "Berita",
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ focused }) => (
             <View style={{ width: 28, alignItems: "center" }}>
               <IconSymbol
                 name={focused ? "newspaper.fill" : "newspaper"}
                 size={24}
-                color={color}
+                color={focused ? theme.primary : theme.secondary}
               />
             </View>
           ),
@@ -88,12 +96,12 @@ export default function TabLayout() {
         options={{
           title: "Notifikasi",
           tabBarLabel: "Notifikasi",
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ focused }) => (
             <View style={{ width: 28, alignItems: "center" }}>
               <IconSymbol
                 name={focused ? "bell.fill" : "bell"}
                 size={24}
-                color={color}
+                color={focused ? theme.primary : theme.secondary}
               />
             </View>
           ),
@@ -111,19 +119,18 @@ export default function TabLayout() {
         options={{
           title: "Profil",
           tabBarLabel: "Profil",
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ focused }) => (
             <IconSymbol
               name={focused ? "person.fill" : "person"}
               size={24}
-              color={color}
+              color={focused ? theme.primary : theme.secondary}
             />
           ),
         }}
       />
 
-      {/* ── Hidden tabs ── */}
+      {/* â”€â”€ Hidden tabs â”€â”€ */}
       <Tabs.Screen name="index" options={{ href: null }} />
-      <Tabs.Screen name="news_content/[id]" options={{ href: null }} />
     </Tabs>
   );
 }

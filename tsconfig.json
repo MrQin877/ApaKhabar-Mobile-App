@@ -5,7 +5,9 @@
     "strict": true,
     "skipLibCheck": true,
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     }
   },
   "include": [
@@ -13,6 +15,11 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "nativewind-env.d.ts"
+    "uniwind-types.d.ts"
+  ],
+  "exclude": [
+    ".tmp",
+    "node_modules",
+    "apakhabar-mobile"
   ]
 }

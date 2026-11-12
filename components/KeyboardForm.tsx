@@ -1,10 +1,10 @@
 import { useCallback, useRef, useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, type ScrollViewProps } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, type ScrollViewInstance, type ScrollViewProps } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
 /** Keeps form fields and their actions reachable without changing the closed-keyboard layout. */
 export function KeyboardForm({ style, contentContainerStyle, onFocus, onLayout, onScroll, children, ...props }: ScrollViewProps) {
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
   const scrollY = useRef(0);
   const keyboardTop = useRef(Number.POSITIVE_INFINITY);
   const frame = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);

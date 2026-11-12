@@ -1,6 +1,5 @@
 import React from "react";
 import { Animated, Image, Text } from "react-native";
-import { AUTH_STRINGS } from "../../constants/authData";
 import { getTheme } from "../../constants/theme";
 import { useColorScheme } from "../../hooks/use-color-scheme";
 
@@ -46,14 +45,14 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
         style={[
           {
             color: theme.text,
-            fontSize: isSmall ? 30 : 38,
+            fontSize: Math.min(isSmall ? 30 : 38, width * 0.095),
             marginTop: isSmall ? 20 : 28,
             fontWeight: "800",
-            lineHeight: 44,
+            lineHeight: isSmall ? 36 : 44,
           },
         ]}
       >
-        {AUTH_STRINGS.welcomeTitle}
+        Selamat Datang ke ApaKhabar
       </Text>
 
       {/* Subtitle */}
@@ -67,7 +66,7 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
           },
         ]}
       >
-        {AUTH_STRINGS.welcomeSubtitle}
+        Berita tempatan, lebih dekat dengan anda
       </Text>
     </Animated.View>
   );

@@ -1,5 +1,9 @@
+import { Chip } from "heroui-native/chip";
+import { Ionicons } from "@expo/vector-icons";
+import { newsDateLabel, type NewsDateFilter } from "@/utils/newsFilters";
+import type { ScrollViewInstance } from "react-native";
 import React, { useRef } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import { Theme } from "../../constants/theme";
 
 interface CategoryPillsProps {
@@ -7,6 +11,8 @@ interface CategoryPillsProps {
   activeCategory: string;
   onCategoryPress: (category: string) => void;
   theme: Theme;
+  dateFilter?: NewsDateFilter;
+  onClearDate?: () => void;
 }
 
 export function CategoryPills({
@@ -14,8 +20,10 @@ export function CategoryPills({
   activeCategory,
   onCategoryPress,
   theme,
+  dateFilter = "all",
+  onClearDate,
 }: CategoryPillsProps) {
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
 
   return (
     <ScrollView
@@ -34,8 +42,9 @@ export function CategoryPills({
       {categories.map((cat) => {
         const isActive = activeCategory === cat;
         return (
-          <TouchableOpacity
-            key={cat}
+          <React.Fragment key={cat}>
+          <Chip size="sm" variant={isActive ? "primary" : "secondary"}
+            key={cat === "Semua" ? "Utama" : cat}
             style={[
               styles.catPill,
               {
@@ -44,19 +53,30 @@ export function CategoryPills({
               },
             ]}
             onPress={() => onCategoryPress(cat)}
-            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityState={{ selected: isActive }}
           >
-            <Text
+            <Chip.Label
               style={[
                 styles.catText,
                 {
-                  color: isActive ? "#fff" : theme.secondary,
+                  color: isActive ? theme.background : theme.secondary,
                 },
               ]}
             >
-              {cat}
-            </Text>
-          </TouchableOpacity>
+              {cat === "Semua" ? "Utama" : cat}
+            </Chip.Label>
+          </Chip>
+          {isActive && dateFilter !== "all" && <Chip size="sm" variant="soft"
+            accessibilityRole="button" accessibilityLabel="Buang penapis tarikh" onPress={onClearDate}
+            style={[styles.catPill, { backgroundColor: theme.communityBg, flexDirection: "row", gap: 5 }]}>
+            <Ionicons name="calendar-outline" size={13} color={theme.primary}/>
+            <Chip.Label style={[styles.catText, { color: theme.primary }]}>
+              {newsDateLabel(dateFilter)}
+            </Chip.Label>
+            <Ionicons name="close" size={14} color={theme.primary}/>
+          </Chip>}
+          </React.Fragment>
         );
       })}
     </ScrollView>
@@ -68,7 +88,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     flexGrow: 0,
     flexShrink: 0,
-    height: 52,        // fixed height — never changes regardless of active pill
+    height: 52,        // fixed height â€” never changes regardless of active pill
   },
   catContent: {
     paddingHorizontal: 16,
@@ -79,17 +99,17 @@ const styles = StyleSheet.create({
   },
   catPill: {
     paddingHorizontal: 16,
-    height: 34,            // fixed pill height — never changes
+    height: 32,            // fixed pill height â€” never changes
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 0,
     marginRight: 8,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
   catText: {
-    fontSize: 13,
-    fontWeight: "600",      // fixed weight — never changes, no layout shift
+    fontSize: 12,
+    fontWeight: "600",      // fixed weight â€” never changes, no layout shift
     textAlign: "center",
     includeFontPadding: false,
   },

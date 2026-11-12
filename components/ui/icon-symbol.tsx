@@ -3,21 +3,19 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { SymbolViewProps, SymbolWeight } from "expo-symbols";
 import { ComponentProps } from "react";
-import { OpaqueColorValue, type StyleProp, type TextStyle } from "react-native";
+import { type StyleProp, type TextStyle } from "react-native";
 
-type IconMapping = Record<
-  SymbolViewProps["name"],
-  ComponentProps<typeof MaterialIcons>["name"]
->;
+type IconSymbolNameValue = Extract<SymbolViewProps["name"], string>;
+type IconMapping = Partial<Record<IconSymbolNameValue, ComponentProps<typeof MaterialIcons>["name"]>>;
 
-export type IconSymbolName = keyof typeof MAPPING;
+export type IconSymbolName = IconSymbolNameValue;
 
 /**
  * SF Symbols → Material Icons mapping.
  * Browse SF Symbols: https://developer.apple.com/sf-symbols/
  * Browse Material Icons: https://icons.expo.fyi
  */
-const MAPPING = {
+const MAPPING: IconMapping = {
   // ── Navigation & UI ──────────────────────────────
   "house.fill": "home",
   "paperplane.fill": "send",
@@ -64,7 +62,7 @@ const MAPPING = {
   "camera.fill": "camera-alt",
   gear: "settings",
   "arrow.right.square": "logout",
-} as IconMapping;
+};
 
 export function IconSymbol({
   name,
@@ -74,7 +72,7 @@ export function IconSymbol({
 }: {
   name: IconSymbolName;
   size?: number;
-  color: string | OpaqueColorValue;
+  color: ComponentProps<typeof MaterialIcons>["color"];
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
@@ -82,7 +80,7 @@ export function IconSymbol({
     <MaterialIcons
       color={color}
       size={size}
-      name={MAPPING[name]}
+      name={MAPPING[name] ?? "help-outline"}
       style={style}
     />
   );

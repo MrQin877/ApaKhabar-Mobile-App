@@ -3,13 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { Theme } from "../../constants/theme";
 import { NewsCard } from "./NewsCard";
 
-interface NewsItem {
-  id: string;
-  title: string;
-  category: string;
-  image: string;
-  date: string;
-}
+import type { NewsItem } from "@/hooks/useNews";
 
 interface NewsListProps {
   news: NewsItem[];
@@ -22,11 +16,7 @@ export function NewsList({ news, theme }: NewsListProps) {
       {news.map((item) => (
         <NewsCard
           key={item.id}
-          id={item.id}
-          title={item.title}
-          category={item.category}
-          image={item.image}
-          date={item.date}
+          {...item}
           theme={theme}
         />
       ))}

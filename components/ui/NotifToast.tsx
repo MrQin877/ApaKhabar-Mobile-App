@@ -1,7 +1,7 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { getTheme } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
     Animated,
     StyleSheet,
@@ -20,7 +20,7 @@ export function NotifToast({ message, onDismiss }: NotifToastProps) {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
-  const translateY = useRef(new Animated.Value(-100)).current;
+  const [translateY] = useState(() => new Animated.Value(-100));
 
   useEffect(() => {
     if (!message) return;
@@ -41,7 +41,7 @@ export function NotifToast({ message, onDismiss }: NotifToastProps) {
     }, 4000);
 
     return () => clearTimeout(timer);
-  }, [message]);
+  }, [message, onDismiss, translateY]);
 
   if (!message) return null;
 

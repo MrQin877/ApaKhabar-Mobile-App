@@ -1,0 +1,418 @@
+APAKHABAR MOBILE APP - SETUP REQUIREMENTS
+Repository inspection date: 12 November 2026
+
+Scope: Repo C, the Expo / React Native mobile repository. The active application
+is at the repository root (package: apakhabar-mobile-app). Commands below run
+there unless another directory is explicitly named.
+
+apakhabar-mobile/ is a separate older Expo template with its own package.json.
+It is excluded by the root TypeScript, ESLint and CSS configuration. Do not mix
+its packages or installation commands into the active root application.
+
+This file records source/configuration requirements, not a clean-computer build
+certification. No packages were installed or updated during this inspection.
+Unconfirmed requirements are explicitly marked "Needs verification".
+
+1. SOFTWARE TO DOWNLOAD AND INSTALL
+==================================
+Required for the active mobile app:
+- Node.js: use a supported version allowed by the locked Expo 58 engine range:
+  ^22.13.0 || ^24.3.0 || ^26.0.0 || >=27.0.0.
+  React Native 0.88.1 and Metro also require modern Node. Node 22.x >=22.13.0
+  satisfies the inspected engine ranges; Node 20 is not sufficient here.
+  The repository has no engines field, .nvmrc or .node-version pin.
+- npm: use the npm bundled with the selected compatible Node installation.
+  Exact required npm version: Needs verification (no packageManager/engine pin).
+  Root package-lock.json uses lockfileVersion 3.
+- A compatible physical Android/iOS phone, with either an Expo Go release that
+  supports Expo SDK 58, or an installed compatible development build.
+  Exact Expo Go app version and phone OS minimum: Needs verification.
+- Git if cloning the repository. Version: Needs verification; no version pin.
+- Internet access for package installation and any remotely hosted backend.
+- A terminal; PowerShell commands are provided below for the current Windows
+  workflow. VS Code is optional, not required by the runtime.
+
+Conditional tools, only for the workflows described:
+- Docker Desktop / Docker Engine with Docker Compose v2: ONLY if running the
+  Laravel backend locally from Repo A. Exact versions: Needs verification;
+  Repo C contains references to Repo A's Compose files, not their definitions.
+  Windows Docker virtualization/WSL setup: Needs verification for that machine.
+- Android Studio, Android SDK/emulator and JDK: only for Android emulation or
+  local native builds, not for testing with an already installed Expo Go/build.
+  Exact SDK/JDK/Android Studio versions: Needs verification; no android/ project
+  or local native build configuration is committed here.
+- macOS, Xcode and CocoaPods: only for iOS simulator/local iOS native builds.
+  Windows cannot run Xcode or the iOS simulator. Versions: Needs verification.
+- Expo account / EAS build tooling: only if using Expo-hosted native builds or
+  configuring Expo push delivery. EAS CLI version: Needs verification; no eas.json
+  or pinned EAS CLI exists in this repository.
+- PHP CLI: only for the optional scripts/backend-readonly-audit.php helper or
+  a separately managed non-Docker backend. PHP version: Needs verification.
+  That helper needs standard JSON support plus PDO and pdo_mysql for MySQL/
+  MariaDB inspection, and Repo A's Composer vendor/autoload.php and environment.
+  It is NOT part of normal mobile startup.
+
+Not required on the mobile developer's machine for normal mobile startup:
+- PHP, Composer, Python, Apache/XAMPP, a standalone SQL database or Redis.
+  The mobile code calls Laravel over HTTP; it does not host Laravel or connect
+  directly to a database. Repo A owns its backend, database and service setup.
+- No Python requirements, composer.json, root Dockerfile or Compose deployment
+  files are supplied by this mobile repository. Composer is only relevant if
+  separately preparing the backend/vendor dependencies for the optional audit.
+- No global legacy expo-cli, SVG transformer, extra UI library or separate
+  mobile Docker container is required. The local Expo CLI comes with Expo.
+
+2. DEPENDENCIES AND PACKAGES
+============================
+Install the root package.json and package-lock.json together using npm ci.
+The declared range is shown first; "locked" is the exact root lockfile version.
+Do not individually upgrade packages to unrelated SDK versions.
+
+Root application dependencies:
+- @expo/vector-icons: ^15.0.3 (locked: 15.1.1)
+- @gorhom/bottom-sheet: ^5.2.14 (locked: 5.2.14)
+- @react-native-async-storage/async-storage: 2.2.0 (locked: 2.2.0)
+- axios: ^1.14.0 (locked: 1.21.1)
+- babel-preset-expo: ~58.0.0 (locked: 58.0.25)
+- expo: ^58.0.24 (locked: 58.0.24)
+- expo-asset: ~58.0.21 (locked: 58.0.21)
+- expo-constants: ~58.0.16 (locked: 58.0.16)
+- expo-device: ~58.0.5 (locked: 58.0.5)
+- expo-font: ~58.0.12 (locked: 58.0.12)
+- expo-haptics: ~58.0.8 (locked: 58.0.8)
+- expo-image: ~58.0.18 (locked: 58.0.18)
+- expo-linear-gradient: ~58.0.4 (locked: 58.0.4)
+- expo-linking: ~58.0.17 (locked: 58.0.17)
+- expo-notifications: ~58.1.9 (locked: 58.1.9)
+- expo-router: ~58.0.31 (locked: 58.0.31)
+- expo-secure-store: ~58.0.3 (locked: 58.0.3)
+- expo-splash-screen: ~58.0.14 (locked: 58.0.14)
+- expo-status-bar: ~58.0.5 (locked: 58.0.5)
+- expo-symbols: ~58.0.5 (locked: 58.0.5)
+- expo-system-ui: ~58.0.7 (locked: 58.0.7)
+- expo-web-browser: ~58.0.8 (locked: 58.0.8)
+- heroui-native: ^1.0.11 (locked: 1.0.11)
+- react: 19.3.0 (locked: 19.3.0)
+- react-dom: 19.3.0 (locked: 19.3.0)
+- react-native: 0.88.1 (locked: 0.88.1)
+- react-native-gesture-handler: ~3.3.0 (locked: 3.3.0)
+- react-native-reanimated: 4.7.1 (locked: 4.7.1)
+- react-native-safe-area-context: ~5.11.1 (locked: 5.11.1)
+- react-native-screens: ~4.30.1 (locked: 4.30.1)
+- react-native-svg: ^15.16.0 (locked: 15.16.0)
+- react-native-web: ^0.21.4 (locked: 0.21.4)
+- react-native-worklets: 0.13.0 (locked: 0.13.0)
+- tailwind-merge: ^3.7.0 (locked: 3.7.0)
+- tailwind-variants: ^3.3.1 (locked: 3.3.1)
+- tailwindcss: ^4.3.5 (locked: 4.3.5)
+- uniwind: ^1.13.2 (locked: 1.13.2)
+
+Development / validation dependencies:
+- @types/react: ~19.3.0 (locked: 19.3.0)
+- eslint: ^9.25.0 (locked: 9.39.5)
+- eslint-config-expo: ~58.0.4 (locked: 58.0.4)
+- typescript: ~6.0.3 (locked: 6.0.3)
+
+Configuration that must remain present:
+- package.json main = expo-router/entry; file-based routes live under app/.
+- Babel uses babel-preset-expo; Metro uses Expo defaults wrapped in Uniwind.
+- global.css imports Tailwind CSS, Uniwind and heroui-native/styles.
+- app/_layout.tsx supplies GestureHandlerRootView, HeroUI provider/portal,
+  appearance provider and notification context. No new shadcn package is needed.
+- react-native-svg and expo-asset render the supplied mascot SVG. SVG remains
+  a Metro asset, not an imported JSX component. No react-native-svg-transformer
+  is required by the current import path. The original masks/filter effects
+  must be rendered through react-native-svg, not expo-image's Android decoder.
+- Preserve app.json icons, splash image and all referenced local assets.
+  Inspected app.json asset paths exist.
+- Native modules must match the installed development build. Rebuild that client
+  after changing native dependency/configuration versions.
+
+Separate nested template (optional; not needed to run the active app):
+- Directory: apakhabar-mobile/; package: apakhabar-mobile.
+- It has no package-lock.json. Exact resolved/transitive versions:
+  Needs verification. Its package declarations are listed below for completeness.
+
+dependencies:
+- @rn-primitives/portal: ~1.4.0
+- @rn-primitives/slot: ^1.5.2
+- class-variance-authority: ^0.7.1
+- clsx: ^2.1.1
+- expo: ~56.0.13
+- expo-constants: ~56.0.19
+- expo-linking: ~56.0.14
+- expo-router: ~56.2.12
+- expo-splash-screen: ~56.0.11
+- expo-status-bar: ~56.0.4
+- expo-system-ui: ~56.0.5
+- lucide-react-native: ^1.21.0
+- nativewind: ^4.2.6
+- react: 19.2.3
+- react-dom: 19.2.3
+- react-native: 0.85.3
+- react-native-reanimated: 4.3.1
+- react-native-safe-area-context: ~5.7.0
+- react-native-screens: 4.25.2
+- react-native-svg: 15.15.4
+- react-native-web: ^0.21.0
+- react-native-worklets: 0.8.3
+- tailwind-merge: ^3.5.0
+- tailwindcss: ^3.4.14
+- tailwindcss-animate: ^1.0.7
+
+devDependencies:
+- @babel/core: ^7.26.0
+- @types/react: ~19.2.10
+- prettier: ^3.8.3
+- prettier-plugin-tailwindcss: ^0.8.0
+- typescript: ~6.0.3
+
+- If intentionally working on that template: cd apakhabar-mobile; npm install;
+  npm run dev. Return to the repository root to work on the real mobile app.
+- Do not copy its NativeWind/Tailwind 3 or Expo 56 settings into the root's
+  Uniwind/Tailwind 4 and Expo 58 application.
+
+3. ENVIRONMENT CONFIGURATION
+============================
+Create root .env from .env.example. Public configuration example:
+
+EXPO_PUBLIC_API_BASE_URL=http://<LAPTOP_WIFI_IPV4>:8088/api
+
+Optional variables read by active source:
+EXPO_PUBLIC_API_URL=https://<BACKEND_HOST>/api
+EXPO_PUBLIC_NEWS_TIME_ZONE=Asia/Kuala_Lumpur
+
+- EXPO_PUBLIC_API_BASE_URL takes precedence over the legacy EXPO_PUBLIC_API_URL.
+- Provide the complete API root including /api. Do not use localhost for a
+  physical phone: localhost points to that phone, not your laptop.
+- If both API URL variables are blank, development uses Expo's LAN host and
+  port 8088; Android loopback maps to 10.0.2.2 for the emulator. Expo tunnels
+  forward Metro only, not the Laravel API.
+- Production has a local fallback in source. Always set the deployed HTTPS API
+  root explicitly for release builds; do not rely on that fallback.
+- The optional news timezone defaults to Asia/Kuala_Lumpur and affects date filters.
+- Expo embeds EXPO_PUBLIC_* values in the client bundle: never place passwords,
+  API secrets, SMTP credentials, database credentials or private keys there.
+- Restart Expo with --clear after changes. Rebuild/rebundle release applications
+  with the intended public API environment when deploying to Azure.
+- .env is ignored by Git; .env.example is the distributable template.
+
+Local backend network configuration (in Repo A, not this mobile .env):
+- Repo A deployment/.env requires LAN_IP matching the laptop Wi-Fi IPv4 address
+  for its documented LAN override. The documented web port is 8088.
+- Other backend variables and exact values: Needs verification in Repo A's
+  own deployment documentation/templates. Do not copy private backend values here.
+- Phone and laptop must use the same reachable Wi-Fi/LAN. Permit Metro's displayed
+  port (normally 8081) and backend 8088 through the development network firewall.
+- Browser/web testing also requires backend CORS configuration for the Expo web
+  origin. Native local HTTP policy in a custom release build: Needs verification.
+
+App configuration:
+- app.json defines scheme apakhabarmobileapp, Expo owner and extra.eas.projectId.
+  Confirm project access/ownership; do not replace it with an unrelated project.
+  Push setup reads extra.eas.projectId, not an EXPO_PUBLIC_* variable.
+- Android package ID, iOS bundle identifier, EAS build profiles and platform push
+  credentials are not defined here. They need configuration for native releases.
+- Password-reset deep links handled by app/_layout.tsx use reset-password with
+  token and email query parameters. Backend email/link configuration must match
+  the installed app's scheme or the relevant development URL.
+
+4. EXTERNAL SERVICES AND APIS
+=============================
+Required for real app data and account actions:
+- A reachable ApaKhabar Laravel API (Repo A), hosted locally or remotely.
+  No Laravel/PHP/database version can be established from Repo C dependency
+  manifests. Backend runtime versions: Needs verification in Repo A.
+- News/category APIs: /news, /news/{id}, /news/{id}/related, /categories.
+- Broadcast API: /broadcasts/darurat. Eligibility/priority/visibility/expiry
+  remain server responsibilities.
+- Authentication/profile: /login, /register, /logout, GET/PATCH /profile.
+  Registration must support date_of_birth, citizenship, optional gender/ethnicity,
+  email or international-format phone, and password/password_confirmation.
+- Notifications/read status: /notifications, /notifications/{id}/read,
+  /notifications/read-all. Protected requests use the saved bearer token.
+- Likes/comments/replies/reports: /news/{id}/like, /news/{id}/comment,
+  /comments/{id}/replies, /comments/{id}/report.
+- Public storage/image URLs supplied by the backend must be reachable from the
+  phone; preserve the /storage asset mapping used by utils/newsImage.ts.
+
+Feature-dependent services, managed on the backend or native platform:
+- Email verification/password reset requires the backend's working email-delivery
+  setup and correct links. Provider, credentials and exact versions:
+  Needs verification in Repo A; no mail secret belongs in the mobile app.
+- Phone verification/change and phone password reset require backend OTP delivery
+  and the /phone/* verification/password routes called by the service modules.
+  OTP provider, delivery channel and credentials: Needs verification in Repo A.
+- Remote push uses Expo push tokens and the authenticated /push-token endpoint.
+  Real devices, permission, project access, FCM/APNs credentials and a compatible
+  native/development build are needed. Code deliberately skips remote token
+  registration in Expo Go, on web and on simulators/non-physical devices.
+  Local in-app notification retrieval remains available without push permission.
+- Comment moderation is handled by Laravel. An optional read-only audit checks
+  whether a backend moderation key exists, but Repo C does not call an AI API
+  directly. Exact moderation/provider configuration: Needs verification in Repo A.
+- Azure is an optional future Laravel host, not required for local startup.
+- Unused constants/newsData.ts includes sample external image URLs; those are not
+  a mandatory production news API or a reason to configure a separate service.
+
+5. INSTALLATION AND SETUP COMMANDS
+=================================
+Run these yourself on the new computer; this inspection did not execute installs.
+Use your actual clone path in place of <REPO_C_PATH>.
+
+A. Check tools and install root dependencies:
+   node --version
+   npm --version
+   cd "<REPO_C_PATH>"
+   npm ci
+
+B. Create and edit public environment configuration (PowerShell):
+   Copy-Item .env.example .env
+   ipconfig
+   Set EXPO_PUBLIC_API_BASE_URL in .env to the laptop Wi-Fi IPv4 address and /api.
+   Copy the template only on initial setup; do not overwrite an existing .env.
+
+C. If using the already-prepared local Docker backend:
+   Open Docker Desktop first.
+   cd "<REPO_A_PATH>"
+   docker compose --env-file deployment/.env -f deployment/compose.yaml -f deployment/compose.lan.yaml up -d --no-build
+   docker compose --env-file deployment/.env -f deployment/compose.yaml -f deployment/compose.lan.yaml ps
+
+   This command assumes Repo A's environment files, images, database and initial
+   setup already exist. It does not bootstrap a brand-new backend computer.
+   Image build/pull, database migrations and backend credentials on a new machine:
+   Needs verification in Repo A. Do not run migrations against a shared database
+   merely to set up this mobile repository.
+
+D. Start the mobile app from Repo C:
+   cd "<REPO_C_PATH>"
+   npx expo start --lan --clear
+
+   Scan with SDK-58-compatible Expo Go or open the installed compatible client.
+   Press Ctrl+C in the terminal to stop Expo.
+
+Existing root npm scripts:
+   npm start        -> expo start
+   npm run android  -> expo start --android (requires emulator/device target)
+   npm run ios      -> expo start --ios (iOS simulator requires macOS/Xcode)
+   npm run web      -> expo start --web
+   npm run lint     -> expo lint
+
+Validation commands (do not update packages):
+   node node_modules/typescript/bin/tsc --noEmit
+   npm ls --depth=0
+   npx expo install --check
+   npx expo-doctor
+
+   expo-doctor is not pinned in package.json; npx may download it and require
+   internet access. Its version/results on a new computer: Needs verification.
+   The --check command reports compatibility; do not substitute --fix unless an
+   intentional dependency update has been approved.
+
+Optional native build commands after platform configuration is completed:
+   npx expo run:android
+   npx expo run:ios
+   These may generate native projects/install native dependencies. They are not
+   required for normal Expo Go use. Custom development-client setup is described
+   as a verification gap below, not as an already configured build workflow.
+
+Do not run npm run reset-project as an installation step: it moves the app files
+and restores a starter project. The nested template's clean script uses POSIX
+rm -rf and is neither a root setup step nor portable PowerShell syntax.
+
+6. MISSING OR OUTDATED REQUIREMENTS
+==================================
+Confirmed from the repository inspection:
+- Root declared dependencies and root lockfile ranges match. Active source imports
+  were checked against declarations; no confirmed missing mandatory direct package
+  was identified. Node built-ins used by tests do not need npm installation.
+- expo-blur is an OPTIONAL HeroUI peer and is not locked. No active direct import
+  requires it, so it is not a mandatory missing package for the current UI.
+- expo-dev-client is not declared/locked; eas.json and native build identifiers
+  are absent. For an Expo custom development-client workflow, the required client
+  dependency, push plugin configuration, build profiles, identifiers and credentials
+  need setup. Needs verification. Do not install these for Expo Go by default.
+- app.json does not list the expo-notifications config plugin. Remote notification
+  native configuration/credentials must be verified before treating push as ready.
+- Root Node/npm versions are not pinned in engines/packageManager or a Node
+  version file. Use the lockfile engine constraints in section 1.
+- The nested template targets older Expo 56, React 19.2.3 and React Native 0.85.3;
+  the active root targets Expo 58, React 19.3.0 and React Native 0.88.1. This is a
+  separate template, not evidence that the root needs to be downgraded.
+- The nested template has no lockfile; reproducible exact dependency versions
+  for that optional application need verification.
+- package.json has no test script. Regression tests are standalone Node scripts.
+- scripts/mobile-integration-regression.test.cjs reads a sibling Repo A routes file.
+  That test needs the expected sibling repository path, even though most other
+  tests use mocks and do not require a live backend.
+- scripts/backend-readonly-audit.php assumes a sibling Repo A with vendor/ and
+  backend configuration. It is an optional diagnostic, not a mobile dependency.
+- services/api.ts already uses a base URL ending in /api, while the profile
+  change-password screen posts to /api/change-password. This can produce
+  /api/api/change-password. The intended route/method and backend support:
+  Needs verification before considering authenticated password changes working.
+- The checked-in .env.example contains a placeholder Wi-Fi host; it must be edited
+  for each computer. Future deployment URLs and push credentials cannot be inferred.
+- Fonts, SVGs and app.json assets are local. No additional font download or SVG
+  transformer was identified as a requirement.
+
+Not confirmed:
+- Whether any dependency is outdated relative to the current npm registry or has
+  a published vulnerability: Needs verification. No registry audit/update was run.
+  Caret/tilde ranges and historical migration notes do not establish latestness.
+- Fresh npm ci, native Android/iOS builds, device rendering, live push delivery,
+  real OTP/email delivery, backend reachability and remote credentials on a new
+  computer: Needs verification. Existing historical reports are not fresh tests.
+- PHP/Composer/Docker/database/native toolchain versions outside Repo C cannot be
+  reliably specified from this repository. Follow their own project requirements.
+
+7. STEPS TO VERIFY THE PROJECT IS WORKING
+=======================================
+1. Confirm node --version satisfies section 1 and npm ci completes in Repo C.
+   Confirm npm ls --depth=0, TypeScript and Expo compatibility checks succeed.
+2. On the physical phone, open:
+   http://<LAPTOP_WIFI_IPV4>:8088/api/news
+   JSON indicates the phone can reach Laravel. If it cannot connect, check the
+   Docker LAN binding, current IPv4, Wi-Fi isolation and firewall before Expo.
+3. Start Expo with --lan --clear; check the QR URL targets the correct LAN host.
+   Open with a compatible client and confirm no missing-native-module errors.
+4. Check welcome SVG, logo and buttons in light/dark mode. Verify the original
+   mascot is visible and text/buttons are not clipped on small screens.
+5. With a test account, verify email and international-phone login, registration
+   demographics, 422 errors, duplicate-submit protection and logout/session clearing.
+   Registration and account actions write to Laravel; use approved test accounts.
+6. Verify email confirmation links and phone OTP delivery, then refresh Profile
+   and confirm verification statuses come from the server.
+7. Verify news/categories, quick/custom-date filters, detail/back navigation,
+   storage images, likes, comments/replies/reports and server moderation behavior.
+8. Verify notification skeleton/error/empty/permission states, pull-to-refresh,
+   individual/all read status, persistence after reopening and broadcast visibility.
+9. For a configured real-device native build, grant/deny notification permission,
+   verify /push-token registration and test backend push delivery. Expo Go/web
+   intentionally do not test that remote-push workflow.
+10. Test reset-password links and separately verify the change-password endpoint
+    noted in section 6. Check appearance persistence and privacy navigation.
+
+Standalone regression scripts (run from the root; controlled mocks are not
+end-to-end device/backend verification):
+   node scripts/auth-regression.test.cjs
+   node scripts/broadcast-card-regression.test.cjs
+   node scripts/mobile-integration-regression.test.cjs
+   node scripts/news-comments-regression.test.cjs
+   node scripts/news-date-flow-regression.test.cjs
+   node scripts/news-detail-regression.test.cjs
+   node scripts/news-filters-regression.test.cjs
+   node scripts/notification-states-regression.test.cjs
+   node scripts/profile-page-regression.test.cjs
+   node scripts/registration-flow-regression.test.cjs
+   node scripts/svg-rendering-regression.test.cjs
+
+The mobile-integration test requires sibling Repo A source as noted above.
+The optional PHP audit may connect read-only to the backend database; it is not
+necessary to install or run the mobile app and is not part of these Node tests.
+
+Inspection sources: root and nested package manifests; root lockfile; app.json;
+.env.example; environment variable names only from local env files; Metro/Babel/
+TypeScript/ESLint/CSS configuration; app routes, service modules, contexts, hooks,
+assets, tests and repository setup/migration documents. Backend-only versions and
+credentials were not inferred from sample text or exposed in this file.

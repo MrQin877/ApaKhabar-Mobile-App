@@ -69,17 +69,25 @@ export default function NotificationDetailScreen() {
     time: string;
     sent_at_full: string;
     read: string;
+    source?: string;
   }>();
 
-  const type = (params.type as NotifType) ?? "info";
-  const cfg = TYPE_CONFIG[type];
+  const type: NotifType = params.type === "emergency" || params.type === "community" ? params.type : "info";
+  const isBroadcast = params.source === "broadcast";
+  const cfg = {
+    ...TYPE_CONFIG[type],
+    pillBg: type === "emergency" ? theme.emergencyBg : theme.communityBg,
+    pillText: type === "emergency" ? theme.error : theme.primary,
+    iconBg: type === "emergency" ? theme.emergencyBg : theme.communityBg,
+    iconColor: type === "emergency" ? theme.error : theme.primary,
+  };
   const isRead = params.read === "true";
 
   useEffect(() => {
-    if (!isRead && params.id) {
+    if (!isBroadcast && !isRead && params.id) {
       markRead(params.id).catch(() => {});
     }
-  }, []);
+  }, [isBroadcast, isRead, params.id]);
 
   return (
     <View
@@ -97,7 +105,7 @@ export default function NotificationDetailScreen() {
         >
           <IconSymbol name="chevron.left" size={18} color={theme.primary} />
           <Text style={[styles.backText, { color: theme.primary }]}>
-            Notifikasi
+            {isBroadcast ? "Berita" : "Notifikasi"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -117,7 +125,7 @@ export default function NotificationDetailScreen() {
             <View
               style={[styles.unreadDot, { backgroundColor: theme.primary }]}
             />
-            <Text style={[styles.unreadText, { color: "#1A5C2A" }]}>
+            <Text style={[styles.unreadText, { color: theme.primary }]}>
               Belum dibaca
             </Text>
           </View>

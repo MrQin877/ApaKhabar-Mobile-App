@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import api from "../services/api";
+import { useMemo, useState } from "react";
+import { useNewsFeed } from "./useNewsFeed";
+import { filterNews } from "@/utils/newsFilters";
 
 export interface NewsItem {
   id: string;
@@ -11,70 +12,26 @@ export interface NewsItem {
   views: number;
   date: string;
   body?: string;
+  description?: string;
+  author?: string | { name?: string };
+  time?: string;
+  preview?: string;
+  published_at?: string;
+  created_at?: string;
+  author_name?: string;
 }
 
 export function useNews() {
-  const [allNews, setAllNews] = useState<NewsItem[]>([]);
-  const [categories, setCategories] = useState<string[]>(["Semua"]);
+  const feed = useNewsFeed();
   const [activeCategory, setActiveCategory] = useState("Semua");
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchNews = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setError(null);
-
-    try {
-      const res = await api.get("/news");
-      const news: NewsItem[] = res.data?.data ?? res.data;
-
-      setAllNews(news);
-
-      const unique = Array.from(new Set(news.map((n) => n.category)));
-      setCategories(["Semua", ...unique]);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchNews();
-  }, [fetchNews]);
-
-  const handleRefresh = useCallback(() => fetchNews(true), [fetchNews]);
-
-  const isFiltering = activeCategory !== "Semua" || search.trim() !== "";
-
-  const filteredNews = allNews.filter((item) => {
-    const matchCategory =
-      activeCategory === "Semua" || item.category === activeCategory;
-    const matchSearch = item.title.toLowerCase().includes(search.toLowerCase());
-    return matchCategory && matchSearch;
-  });
-
-  // "Semua" view: first item is featured, rest is list
-  // Category/search view: no featured card, everything is a flat list
-  const featuredNews =
-    !isFiltering && filteredNews.length > 0 ? filteredNews[0] : null;
-  const listNews = !isFiltering ? filteredNews.slice(1) : filteredNews;
-
+  const categories = useMemo(() => ["Semua", ...Array.from(new Set([...feed.categories, ...feed.items.map(item => item.category)]))], [feed.categories, feed.items]);
+  const filtered = useMemo(() => filterNews(feed.items, { query: search, category: activeCategory }), [feed.items, search, activeCategory]);
+  const isFiltering = activeCategory !== "Semua" || !!search.trim();
   return {
-    featuredNews,
-    listNews,
-    categories,
-    activeCategory,
-    setActiveCategory,
-    search,
-    setSearch,
-    loading,
-    refreshing,
-    error,
-    handleRefresh,
+    featuredNews: !isFiltering ? filtered[0] : null,
+    listNews: !isFiltering ? filtered.slice(1) : filtered,
+    categories, activeCategory, setActiveCategory, search, setSearch,
+    loading: feed.loading, refreshing: feed.refreshing, error: feed.error, handleRefresh: feed.refresh,
   };
 }

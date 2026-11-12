@@ -1,12 +1,15 @@
+import type { NewsDateFilter } from "@/utils/newsFilters";
+import { BottomSheet } from "heroui-native/bottom-sheet";
+import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { Button } from "heroui-native/button";
+import { SearchField } from "heroui-native/search-field";
 import React, { useState } from "react";
 import {
-  Modal,
   StyleSheet,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "../../constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -15,6 +18,9 @@ interface SearchBarProps {
   onSearchChange: (text: string) => void;
   onFilterChange?: (filter: "all" | "today" | "week" | "month") => void;
   theme: Theme;
+  onSearchPress?: () => void;
+  onCalendarPress?: () => void;
+  dateFilter?: NewsDateFilter;
 }
 
 export function SearchBar({
@@ -22,7 +28,12 @@ export function SearchBar({
   onSearchChange,
   onFilterChange,
   theme,
+  onSearchPress,
+  onCalendarPress,
+  dateFilter,
 }: SearchBarProps) {
+  const insets = useSafeAreaInsets();
+  const [showSearch, setShowSearch] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [activeFilter, setActiveFilter] = useState<"all" | "today" | "week" | "month">("all");
 
@@ -47,66 +58,33 @@ export function SearchBar({
           { backgroundColor: theme.card, borderBottomColor: theme.border },
         ]}
       >
-        {/* Filter icon — replaces hamburger */}
-        <TouchableOpacity
-          style={[
-            styles.filterBtn,
-            activeFilter !== "all" && { backgroundColor: theme.primary + "20" },
-          ]}
-          onPress={() => setShowFilter(true)}
-        >
-          <Ionicons
-            name="filter"
-            size={22}
-            color={activeFilter !== "all" ? theme.primary : theme.text}
-          />
-        </TouchableOpacity>
-
-        <View
-          style={[
-            styles.searchWrap,
-            { backgroundColor: theme.accent, borderColor: theme.border },
-          ]}
-        >
-          <TextInput
-            style={[styles.searchInput, { color: theme.text }]}
-            placeholder="Masukkan kata kunci"
-            placeholderTextColor={theme.secondary}
-            value={search}
-            onChangeText={onSearchChange}
-          />
+        <View style={{ flex: 1 }}>
+          <Text accessibilityRole="header" style={{ color: theme.text, fontSize: 28, fontWeight: "800", letterSpacing: -0.6 }}>Warta Kita</Text>
         </View>
-
-        <TouchableOpacity style={styles.searchIconBtn}>
-          <Ionicons name="search" size={20} color={theme.secondary} />
-        </TouchableOpacity>
+        <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel="Cari berita" onPress={onSearchPress ?? (() => setShowSearch(!showSearch))} style={styles.filterBtn}><Ionicons name={showSearch ? "close-outline" : "search-outline"} size={22} color={theme.text}/></Button>
+        <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel="Tapis mengikut tarikh" onPress={onCalendarPress ?? (() => setShowFilter(true))} style={styles.filterBtn}><Ionicons name="calendar-outline" size={22} color={(dateFilter ?? activeFilter) === "all" ? theme.text : theme.primary}/></Button>
       </View>
+      {(showSearch || !!search) && <SearchField value={search} onChange={onSearchChange} style={{ paddingHorizontal: 16, paddingBottom: 8, backgroundColor: theme.card }}>
+        <SearchField.Group><SearchField.SearchIcon iconProps={{ color: theme.primary }}/><SearchField.Input autoFocus={showSearch} accessibilityLabel="Cari berita" placeholder="Masukkan kata kunci" className="h-11 rounded-xl border-0 text-sm shadow-none"/><SearchField.ClearButton accessibilityLabel="Padam kata kunci"/></SearchField.Group>
+      </SearchField>}
 
-      {/* Filter modal */}
-      <Modal
-        visible={showFilter}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowFilter(false)}
-      >
-        <TouchableOpacity
-          style={styles.overlay}
-          activeOpacity={1}
-          onPress={() => setShowFilter(false)}
-        >
-          <View style={[styles.filterSheet, { backgroundColor: theme.card }]}>
-            <Text style={[styles.filterTitle, { color: theme.text }]}>
-              Tapis Mengikut Tarikh
-            </Text>
+      <BottomSheet isOpen={showFilter} onOpenChange={setShowFilter}>
+        <BottomSheet.Portal unstable_accessibilityContainerViewIsModal>
+          <BottomSheet.Overlay accessibilityLabel="Tutup penapis" style={{ backgroundColor: theme.overlay }}/>
+          <BottomSheet.Content snapPoints={['55%']} topInset={insets.top + 12}
+            enableDynamicSizing={false} enableOverDrag={false} contentContainerClassName="h-full p-6"
+            backgroundClassName="rounded-t-3xl bg-overlay shadow-none" handleIndicatorClassName="bg-separator">
+            <BottomSheet.Title style={[styles.filterTitle, { color: theme.text }]}>Tapis Mengikut Tarikh</BottomSheet.Title>
+            <BottomSheetScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 10, paddingBottom: Math.max(24, insets.bottom) }}>
             {filters.map((f) => (
-              <TouchableOpacity
+              <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0"
                 key={f.value}
                 style={[
                   styles.filterOption,
                   {
                     backgroundColor:
                       activeFilter === f.value
-                        ? theme.primary + "15"
+                        ? theme.communityBg
                         : "transparent",
                     borderColor:
                       activeFilter === f.value
@@ -115,7 +93,6 @@ export function SearchBar({
                   },
                 ]}
                 onPress={() => handleFilter(f.value)}
-                activeOpacity={0.8}
               >
                 <Text
                   style={[
@@ -136,11 +113,12 @@ export function SearchBar({
                     color={theme.primary}
                   />
                 )}
-              </TouchableOpacity>
+              </Button>
             ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+            </BottomSheetScrollView>
+          </BottomSheet.Content>
+        </BottomSheet.Portal>
+      </BottomSheet>
     </>
   );
 }
@@ -150,9 +128,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingTop: 24,
+    paddingBottom: 8,
     gap: 10,
-    borderBottomWidth: 1,
+    borderBottomWidth: 0,
   },
   filterBtn: {
     padding: 6,
