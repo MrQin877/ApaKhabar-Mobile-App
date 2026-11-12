@@ -24,6 +24,7 @@
       --backdrop: rgba(0, 0, 0, 0.45);
       --muted: #68716c;
       --default: #f0f3f1;
+      --button-default-hover: #e7eae8;
       --default-foreground: #11181c;
       --accent: #216e35;
       --accent-foreground: #ffffff;
@@ -58,6 +59,7 @@
       --backdrop: rgba(0, 0, 0, 0.65);
       --muted: #a8b5ad;
       --default: #242e28;
+      --button-default-hover: #2c362f;
       --default-foreground: #ecedee;
       --accent: #74d68a;
       --accent-foreground: #151718;
@@ -80,7 +82,9 @@
     }
   }
 }
+/* Solid colors also work with HeroUI colorKit on web, which cannot parse color-mix(). */
 @theme inline static {
+  --color-default-hover: var(--button-default-hover);
   --color-news-warning: var(--news-warning);
   --color-news-community: var(--news-community);
 }

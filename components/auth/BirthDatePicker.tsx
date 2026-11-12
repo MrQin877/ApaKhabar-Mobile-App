@@ -26,10 +26,10 @@ export function BirthDatePicker({ value, theme, onClose, onConfirm }: { value: s
       <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: insets.bottom + 24, marginTop: insets.top + 12 }]}>
         <Text accessibilityRole="header" style={{ color: theme.text, fontSize: 20, fontWeight: "700", marginBottom: 12 }}>Tarikh lahir</Text>
         <View style={styles.row}>
-          {action("�", () => move(-1), month <= bounds.earliest.slice(0, 7))}
+          {action("‹", () => move(-1), month <= bounds.earliest.slice(0, 7))}
           {action(new Intl.DateTimeFormat("ms-MY", { month: "long", timeZone: "UTC" }).format(first), () => setView(view === "months" ? "days" : "months"))}
           {action(month.slice(0, 4), () => setView(view === "years" ? "days" : "years"))}
-          {action("�", () => move(1), month >= bounds.today.slice(0, 7))}
+          {action("›", () => move(1), month >= bounds.today.slice(0, 7))}
         </View>
         <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ paddingVertical: 12 }} keyboardShouldPersistTaps="handled">
           {view === "years" ? Array.from({ length: +bounds.today.slice(0, 4) - +bounds.earliest.slice(0, 4) + 1 }, (_, index) => +bounds.today.slice(0, 4) - index).map(year => action(String(year), () => chooseYear(year)))
