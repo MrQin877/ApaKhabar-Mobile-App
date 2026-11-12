@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useColorScheme as useDeviceColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Uniwind } from 'uniwind';
 
 type AppearanceMode = 'system' | 'light' | 'dark';
 type ColorScheme = 'light' | 'dark';
@@ -20,8 +21,13 @@ const AppearanceContext = createContext<AppearanceContextValue>({
 });
 
 export function AppearanceProvider({ children }: { children: React.ReactNode }) {
-  const deviceScheme = useDeviceColorScheme() ?? 'light';
+  const systemScheme = useDeviceColorScheme();
+  const deviceScheme: ColorScheme = systemScheme === 'dark' ? 'dark' : 'light';
   const [appearance, setAppearanceState] = useState<AppearanceMode>('system');
+
+  useEffect(() => {
+    Uniwind.setTheme(appearance);
+  }, [appearance]);
 
   // Load saved preference on mount
   useEffect(() => {
@@ -29,17 +35,18 @@ export function AppearanceProvider({ children }: { children: React.ReactNode }) 
       if (saved === 'light' || saved === 'dark' || saved === 'system') {
         setAppearanceState(saved);
       }
-    });
+    }).catch(() => { /* The system theme remains available without storage. */ });
   }, []);
 
-  // Resolve: if system → use device, otherwise use user choice
+  // Resolve: if system â†’ use device, otherwise use user choice
   const colorScheme: ColorScheme =
     appearance === 'system' ? deviceScheme :
     appearance === 'dark'   ? 'dark'       : 'light';
 
   const setAppearance = async (mode: AppearanceMode) => {
     setAppearanceState(mode);
-    await AsyncStorage.setItem(STORAGE_KEY, mode);
+    try { await AsyncStorage.setItem(STORAGE_KEY, mode); }
+    catch { /* Apply this session's choice even if persistence is unavailable. */ }
   };
 
   return (

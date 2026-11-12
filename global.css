@@ -1,0 +1,86 @@
+@import 'tailwindcss';
+@import 'uniwind';
+@import 'heroui-native/styles';
+
+/* Scan the active app only, excluding the old template and local backups. */
+@source './app';
+@source './components';
+@source not './apakhabar-mobile';
+@source not './.tmp';
+
+@layer theme {
+  :root {
+    @variant light {
+      --background: #ffffff;
+      --foreground: #11181c;
+      --surface: #ffffff;
+      --surface-foreground: #11181c;
+      --surface-secondary: #f0f3f1;
+      --surface-secondary-foreground: #11181c;
+      --surface-tertiary: #e8f8ec;
+      --surface-tertiary-foreground: #216e35;
+      --overlay: #ffffff;
+      --overlay-foreground: #11181c;
+      --backdrop: rgba(0, 0, 0, 0.45);
+      --muted: #68716c;
+      --default: #f0f3f1;
+      --default-foreground: #11181c;
+      --accent: #216e35;
+      --accent-foreground: #ffffff;
+      --field-background: #f0f3f1;
+      --field-foreground: #11181c;
+      --field-placeholder: #68716c;
+      --field-border: transparent;
+      --border: #e3e8e5;
+      --separator: #e3e8e5;
+      --focus: #216e35;
+      --link: #216e35;
+      --danger: #bc3232;
+      --danger-foreground: #ffffff;
+      --success: #216e35;
+      --success-foreground: #ffffff;
+      --news-warning: #fee8e8;
+      --news-community: #e8f8ec;
+      --field-shadow: 0 0 0 0 transparent;
+      --surface-shadow: 0 0 0 0 transparent;
+    }
+    @variant dark {
+      --background: #151718;
+      --foreground: #ecedee;
+      --surface: #1c2420;
+      --surface-foreground: #ecedee;
+      --surface-secondary: #242e28;
+      --surface-secondary-foreground: #ecedee;
+      --surface-tertiary: #1a2e1c;
+      --surface-tertiary-foreground: #74d68a;
+      --overlay: #1c2420;
+      --overlay-foreground: #ecedee;
+      --backdrop: rgba(0, 0, 0, 0.65);
+      --muted: #a8b5ad;
+      --default: #242e28;
+      --default-foreground: #ecedee;
+      --accent: #74d68a;
+      --accent-foreground: #151718;
+      --field-background: #242e28;
+      --field-foreground: #ecedee;
+      --field-placeholder: #a8b5ad;
+      --field-border: transparent;
+      --border: #344039;
+      --separator: #344039;
+      --focus: #74d68a;
+      --link: #74d68a;
+      --danger: #ff9999;
+      --danger-foreground: #151718;
+      --success: #74d68a;
+      --success-foreground: #151718;
+      --news-warning: #3d2020;
+      --news-community: #1a2e1c;
+      --field-shadow: 0 0 0 0 transparent;
+      --surface-shadow: 0 0 0 0 transparent;
+    }
+  }
+}
+@theme inline static {
+  --color-news-warning: var(--news-warning);
+  --color-news-community: var(--news-community);
+}

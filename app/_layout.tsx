@@ -1,11 +1,15 @@
+import "../global.css";
 import { NotifToast } from "@/components/ui/NotifToast";
+import AppSafeArea from "@/components/AppSafeArea";
 import {
   NotificationProvider,
   useNotificationCount,
 } from "@/context/NotificationContext";
 import { AppearanceProvider } from "@/context/AppearanceContext";
 import { registerPushToken } from "@/services/pushToken";
-import { PortalHost } from "@rn-primitives/portal";
+import { PortalHost } from "heroui-native/portal";
+import { HeroUINativeProviderRaw } from "heroui-native/provider-raw";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { router, Slot } from "expo-router";
@@ -63,20 +67,26 @@ function RootContent() {
   }, []);
 
   return (
-    <View style={{ flex: 1 }}>
-      <Slot />
-      <PortalHost />
-      <NotifToast message={toastMessage} onDismiss={dismissToast} />
-    </View>
+    <AppSafeArea>
+      <View style={{ flex: 1 }}>
+        <Slot />
+        <PortalHost />
+        <NotifToast message={toastMessage} onDismiss={dismissToast} />
+      </View>
+    </AppSafeArea>
   );
 }
 
 export default function RootLayout() {
   return (
-    <AppearanceProvider>
-      <NotificationProvider>
-        <RootContent />
-      </NotificationProvider>
-    </AppearanceProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppearanceProvider>
+        <HeroUINativeProviderRaw>
+          <NotificationProvider>
+            <RootContent />
+          </NotificationProvider>
+        </HeroUINativeProviderRaw>
+      </AppearanceProvider>
+    </GestureHandlerRootView>
   );
 }

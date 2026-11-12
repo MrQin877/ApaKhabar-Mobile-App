@@ -12,21 +12,22 @@ export function NotifHeader({ unreadCount }: NotifHeaderProps) {
 
   return (
     <View style={styles.container}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
       <Text style={[styles.title, { color: theme.text }]}>Notifikasi</Text>
       {unreadCount > 0 && (
         <View style={[styles.badge, { backgroundColor: theme.error }]}>
           <Text style={styles.badgeText}>{unreadCount}</Text>
         </View>
       )}
+      </View>
+      <Text style={{ color: theme.secondary, fontSize: 12, marginTop: 4 }}>Pemberitahuan penting untuk anda</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    alignItems: "flex-start",
     paddingHorizontal: 16,
     paddingVertical: 14,
   },

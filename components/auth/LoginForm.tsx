@@ -1,220 +1,86 @@
-import { KeyboardForm } from '../KeyboardForm';
+import { KeyboardForm } from "../KeyboardForm";
 import { router } from "expo-router";
-import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { getTheme } from "../../constants/theme";
+import { useState } from "react";
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Button } from "heroui-native/button";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Design, getTheme } from "../../constants/theme";
 import { useColorScheme } from "../../hooks/use-color-scheme";
 import { useAuth } from "../../hooks/useAuth";
-import { Checkbox } from "../ui/checkbox";
-import { AuthButton } from "./AuthButton";
-import { AuthInput } from "./AuthInput";
+import { PasswordInput } from "./PasswordInput";
 
-export function LoginForm({
-  initialStatus,
-}: {
-  initialStatus?: string | null;
-}) {
-  const colorScheme = useColorScheme();
-  const theme = getTheme(colorScheme);
-  const {
-    email,
-    setEmail,
-    password,
-    setPassword,
-    loading,
-    errors,
-    login,
-    clearErrors,
-  } = useAuth();
-  const [rememberMe, setRememberMe] = useState(false);
-  const [status] = useState<string | null>(initialStatus ?? null);
-
-  const handleLogin = () => {
-    clearErrors();
-    login();
-  };
-
-  return (
-    <KeyboardForm style={{ backgroundColor: theme.background }} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>
-          Log masuk ke akun anda
-        </Text>
-        <Text style={[styles.description, { color: theme.secondary }]}>
-          Masukkan e-mail dan kata sandi anda untuk log masuk
-        </Text>
+export function LoginForm({ initialStatus }: { initialStatus?: string | null }) {
+  const theme = getTheme(useColorScheme());
+  const insets = useSafeAreaInsets();
+  const { email, setEmail, password, setPassword, loading, errors, login, clearErrors } = useAuth();
+  const [focused, setFocused] = useState<"identifier" | "password" | null>(null);
+  const handleLogin = () => { clearErrors(); void login(); };
+  const inputStyle = (field: "identifier" | "password", error?: string) => [styles.input, {
+    color: theme.text,
+    backgroundColor: focused === field ? theme.communityBg : theme.accent,
+    borderColor: error ? theme.error : focused === field ? theme.primary : theme.border,
+  }];
+  return <KeyboardForm style={{ backgroundColor: theme.background }} contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
+    <View style={styles.toolbar}>
+      <Button variant="ghost" className="min-w-0 rounded-lg p-0" accessibilityLabel="Kembali" isDisabled={loading}
+        onPress={() => router.canGoBack() ? router.back() : router.replace("/(auth)/welcome")} style={styles.iconButton}>
+        <Ionicons name="arrow-back" size={22} color={theme.secondary}/>
+      </Button>
+      <Button variant="ghost" className="min-w-0 rounded-lg p-0" accessibilityLabel="Maklumat log masuk"
+        onPress={() => Alert.alert("Log masuk", "Gunakan e-mel atau nombor telefon yang telah didaftarkan. Jika terlupa kata laluan, pilih Lupa kata laluan?.")} style={styles.iconButton}>
+        <Ionicons name="information-circle-outline" size={23} color={theme.secondary}/>
+      </Button>
+    </View>
+    <View style={styles.header}>
+      <Text accessibilityRole="header" style={[styles.title, { color: theme.text }]}>Selamat kembali</Text>
+      <Text style={[styles.description, { color: theme.secondary }]}>Log masuk untuk menyimpan berita, memberi reaksi dan menerima notifikasi.</Text>
+    </View>
+    {!!initialStatus && <View style={[styles.status, { backgroundColor: theme.communityBg }]}><Text accessibilityLiveRegion="polite" style={{ color: theme.primary, fontSize: 13 }}>{initialStatus}</Text></View>}
+    <View style={styles.form}>
+      <View style={styles.field}>
+        <Text style={[styles.label, { color: theme.text }]}>E-mel atau telefon</Text>
+        <TextInput accessibilityLabel="E-mel atau telefon" placeholder="E-mel atau nombor telefon" placeholderTextColor={theme.secondary}
+          value={email} onChangeText={text => { setEmail(text); clearErrors(); }} editable={!loading}
+          autoCapitalize="none" autoCorrect={false} keyboardType="default" autoComplete="username" textContentType="username" returnKeyType="next"
+          onFocus={() => setFocused("identifier")} onBlur={() => setFocused(null)} style={inputStyle("identifier", errors.email)}/>
+        {!!errors.email && <Text accessibilityRole="alert" style={[styles.error, { color: theme.error }]}>{errors.email}</Text>}
       </View>
-
-      {/* Status Message */}
-      {status && (
-        <View
-          style={[
-            styles.statusContainer,
-            { backgroundColor: theme.primary + "20" },
-          ]}
-        >
-          <Text style={[styles.statusText, { color: theme.primary }]}>
-            {status}
-          </Text>
-        </View>
-      )}
-
-      {/* Form Fields */}
-      <View style={styles.formContainer}>
-        {/* Email/Phone Field */}
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: theme.text }]}>
-            Alamat e-mail atau nombor telefon
-          </Text>
-          <AuthInput
-            placeholder="email@contoh.com atau +60123456789"
-            value={email}
-            onChangeText={(text: string) => {
-              setEmail(text);
-              clearErrors();
-            }}
-            error={errors.email}
-          />
-          {errors.email && (
-            <Text style={[styles.fieldError, { color: theme.error }]}>
-              {errors.email}
-            </Text>
-          )}
-        </View>
-
-        {/* Password Field */}
-        <View style={styles.fieldGroup}>
-          <View style={styles.passwordLabelRow}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              Kata sandi
-            </Text>
-            <TouchableOpacity
-              disabled={loading}
-              onPress={() => router.navigate("/(auth)/forgot-password")}
-            >
-              <Text style={[styles.forgotLink, { color: theme.primary }]}>
-                Lupa kata sandi?
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <AuthInput
-            placeholder="Kata sandi"
-            value={password}
-            onChangeText={(text: string) => {
-              setPassword(text);
-              clearErrors();
-            }}
-            secureTextEntry
-            error={errors.password}
-          />
-          {errors.password && (
-            <Text style={[styles.fieldError, { color: theme.error }]}>
-              {errors.password}
-            </Text>
-          )}
-        </View>
-
-        {/* Remember Me Checkbox */}
-        <Checkbox
-          value={rememberMe}
-          onValueChange={setRememberMe}
-          label="Ingat saya"
-        />
-
-        {/* General Error */}
-        {errors.general && (
-          <Text style={[styles.generalError, { color: theme.error }]}>
-            {errors.general}
-          </Text>
-        )}
-
-        {/* Login Button */}
-        <AuthButton title="Log masuk" onPress={handleLogin} loading={loading} />
+      <View style={styles.field}>
+        <Text style={[styles.label, { color: theme.text }]}>Kata laluan</Text>
+        <PasswordInput accessibilityLabel="Kata laluan" placeholder="Kata laluan" placeholderTextColor={theme.secondary}
+          value={password} onChangeText={text => { setPassword(text); clearErrors(); }} editable={!loading}
+          autoComplete="current-password" textContentType="password" returnKeyType="go" onSubmitEditing={handleLogin}
+          onFocus={() => setFocused("password")} onBlur={() => setFocused(null)} style={inputStyle("password", errors.password)}/>
+        {!!errors.password && <Text accessibilityRole="alert" style={[styles.error, { color: theme.error }]}>{errors.password}</Text>}
       </View>
-
-      {/* Register Link */}
-      <View style={styles.footer}>
-        <Text style={[styles.footerText, { color: theme.secondary }]}>
-          Belum ada akun?{" "}
-        </Text>
-        <TouchableOpacity disabled={loading} onPress={() => router.replace("/(auth)/register")}>
-          <Text style={[styles.registerLink, { color: theme.primary }]}>
-            Daftar sekarang
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardForm>
-  );
+      <Button variant="ghost" className="h-auto min-h-0 min-w-0 self-start rounded-none p-0" isDisabled={loading}
+        onPress={() => router.navigate("/(auth)/forgot-password")} style={styles.forgot}>
+        <Text style={{ color: theme.primary, fontSize: 12, fontWeight: "600" }}>Lupa kata laluan?</Text>
+      </Button>
+      {!!errors.general && <Text accessibilityRole="alert" style={[styles.error, { color: theme.error }]}>{errors.general}</Text>}
+      <Button variant="ghost" className="h-auto min-w-0 rounded-xl px-4 py-3" isDisabled={loading} accessibilityState={{ busy: loading, disabled: loading }}
+        onPress={handleLogin} style={[styles.submit, { backgroundColor: theme.primary, opacity: loading ? 0.6 : 1 }]}>
+        {loading ? <ActivityIndicator color={theme.background} accessibilityLabel="Sedang log masuk"/> : <Text style={{ color: theme.background, fontSize: 13, fontWeight: "700" }}>Log masuk</Text>}
+      </Button>
+    </View>
+    <View style={styles.footer}>
+      <Text style={{ color: theme.secondary, fontSize: 12 }}>Belum mempunyai akaun?</Text>
+      <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" isDisabled={loading} onPress={() => router.replace("/(auth)/register")} style={{ minHeight: 44 }}>
+        <Text style={{ color: theme.primary, fontSize: 12, fontWeight: "700" }}>Daftar</Text>
+      </Button>
+    </View>
+  </KeyboardForm>;
 }
-
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: 24,
-    justifyContent: "flex-start",
-    paddingTop: 32,
-  },
-  header: {
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 14,
-  },
-  statusContainer: {
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 24,
-  },
-  statusText: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  formContainer: {
-    gap: 24,
-    marginBottom: 32,
-  },
-  fieldGroup: {
-    gap: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  passwordLabelRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  forgotLink: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  fieldError: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  generalError: {
-    textAlign: "center",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 4,
-  },
-  footerText: {
-    fontSize: 14,
-  },
-  registerLink: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
+  container: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 8, width: "100%", maxWidth: Design.contentWidth, alignSelf: "center" },
+  toolbar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
+  iconButton: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  header: { gap: 10, marginBottom: 24 }, title: { fontSize: 28, fontWeight: "800", letterSpacing: -0.6 },
+  description: { fontSize: 14, lineHeight: 21 }, form: { gap: 16 }, field: { gap: 8 },
+  label: { fontSize: 13, fontWeight: "600" }, input: { minHeight: 50, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },
+  forgot: { alignSelf: "flex-start", minHeight: 36, marginTop: -8 },
+  submit: { minHeight: 50, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  footer: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", columnGap: 4, marginTop: 8 },
+  status: { borderRadius: 12, padding: 12, marginBottom: 16 }, error: { fontSize: 12, lineHeight: 18 },
 });

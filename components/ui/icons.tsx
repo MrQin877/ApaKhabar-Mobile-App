@@ -1,6 +1,4 @@
-import { Platform } from "react-native";
 import { IconSymbol } from "./icon-symbol";
-import { IconSymbol as IconSymbolIOS } from "./icon-symbol.ios";
 
 // Unified Icon component that uses the appropriate version based on platform
 export function Icon({
@@ -14,9 +12,8 @@ export function Icon({
   color: string;
   style?: any;
 }) {
-  const IconComponent = Platform.OS === "ios" ? IconSymbolIOS : IconSymbol;
   return (
-    <IconComponent name={name as any} size={size} color={color} style={style} />
+    <IconSymbol name={name} size={size} color={color} style={style} />
   );
 }
 

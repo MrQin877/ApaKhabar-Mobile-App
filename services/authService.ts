@@ -89,8 +89,10 @@ export const register = async (
   password: string,
   confirmPassword: string,
   phone?: string,
+  demographics?: { date_of_birth: string; citizenship: string; gender?: string; ethnicity?: string },
 ) => {
   const payload: Record<string, string | undefined> = {
+    ...demographics,
     name,
     password,
     password_confirmation: confirmPassword,

@@ -62,6 +62,7 @@ for (const action of ['login', 'register']) {
     const navigations = [];
     const { useAuth } = load('hooks/useAuth.ts', {
       react: renderer.react,
+      'react-native': { Platform: { OS: 'web' } },
       'expo-router': { router: { replace: route => navigations.push(route) } },
       '../constants/authData': { VALIDATION_RULES: { email: { pattern: /@/ }, password: { minLength: 8 } } },
       '../services/authService': {
@@ -93,6 +94,7 @@ test('failed login stays on the form and allows a corrected submission', async (
   const routes = [];
   const { useAuth } = load('hooks/useAuth.ts', {
     react: renderer.react,
+    'react-native': { Platform: { OS: 'web' } },
     'expo-router': { router: { replace: route => routes.push(route) } },
     '../constants/authData': { VALIDATION_RULES: { email: { pattern: /@/ }, password: { minLength: 8 } } },
     '../services/authService': { login: async () => {
@@ -191,7 +193,9 @@ test('startup redirects an existing session only to news, never back to welcome'
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }) },
     'expo-router': { Redirect: 'Redirect' },
     'react-native': { ActivityIndicator: 'Spinner', View: 'View' },
-    '../services/authService': { getToken: async () => 'session-token', getProfile: async () => ({ id: '1' }) },
+    '../services/authService': { getToken: async () => 'session-token' },
+    '../constants/theme': { getTheme: () => ({ background: '#fff', primary: '#216E35' }) },
+    '../hooks/use-color-scheme': { useColorScheme: () => 'light' },
   });
   assert.equal(renderer.render(Index).type, 'View');
   renderer.runEffects();

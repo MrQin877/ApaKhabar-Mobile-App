@@ -1,7 +1,7 @@
 import { Platform } from "react-native";
 
-const tintColorLight = "#0a7ea4";
-const tintColorDark = "#fff";
+const tintColorLight = "#216E35";
+const tintColorDark = "#74D68A";
 
 export const Colors = {
   light: {
@@ -12,13 +12,14 @@ export const Colors = {
     tabIconDefault: "#687076",
     tabIconSelected: tintColorLight,
     // App-specific colors
-    primary: "#3FCC54",
-    secondary: "#AABFBA",
-    accent: "#F7FAF9",
+    primary: "#216E35",
+    secondary: "#68716C",
+    accent: "#F0F3F1",
     card: "#fff",
-    border: "#bdcbc6",
-    error: "#E05252",
+    border: "#E3E8E5",
+    error: "#BC3232",
     warning: "#FEE8E8",
+    overlay: "rgba(0,0,0,0.45)",
     emergencyBg: "#FEE8E8",
     communityBg: "#E8F8EC",
   },
@@ -30,13 +31,14 @@ export const Colors = {
     tabIconDefault: "#9BA1A6",
     tabIconSelected: tintColorDark,
     // App-specific colors
-    primary: "#3FCC54",
-    secondary: "#6B8880",
-    accent: "#1A1A1A",
-    card: "#2A2A2A",
-    border: "#3A3A3A",
-    error: "#E05252",
+    primary: "#74D68A",
+    secondary: "#A8B5AD",
+    accent: "#242E28",
+    card: "#1C2420",
+    border: "#344039",
+    error: "#FF9999",
     warning: "#3D2020",
+    overlay: "rgba(0,0,0,0.65)",
     emergencyBg: "#3D2020",
     communityBg: "#1A2E1C",
   },
@@ -64,7 +66,7 @@ export const Fonts = Platform.select({
   },
 });
 
-// Theme type — import this in all components instead of typing manually
+// Theme type â€” import this in all components instead of typing manually
 export type Theme = typeof Colors.light;
 
 // Helper function to get theme based on color scheme
@@ -73,3 +75,6 @@ export function getTheme(
 ): Theme {
   return Colors[colorScheme ?? "light"];
 }
+
+// Shared layout values for mobile surfaces.
+export const Design = { spacing: { xs: 4, sm: 8, md: 16, lg: 24 }, radius: { image: 10, card: 16, pill: 24 }, contentWidth: 680 };

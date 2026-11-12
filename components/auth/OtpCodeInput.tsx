@@ -1,3 +1,4 @@
+import type { TextInputInstance } from "react-native";
 import { useRef } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { getTheme } from '../../constants/theme';
@@ -9,7 +10,7 @@ export function OtpCodeInput({ value, onChange, disabled }: {
   disabled?: boolean;
 }) {
   const theme = getTheme(useColorScheme());
-  const inputs = useRef<(TextInput | null)[]>([]);
+  const inputs = useRef<(TextInputInstance | null)[]>([]);
 
   function change(index: number, text: string) {
     const digits = text.replace(/[^0-9]/g, '').slice(0, 6);

@@ -3,6 +3,7 @@ import { getTheme } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useRouter } from "expo-router";
 import type { SFSymbol } from "expo-symbols";
+import { useRef } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export type NotifType = "info" | "emergency" | "community";
@@ -16,6 +17,10 @@ export interface Notification {
   time: string;
   sent_at_full: string;
   read: boolean;
+  location?: string;
+  affected_area?: string;
+  source?: string;
+  safety_instructions?: string[];
 }
 
 const TYPE_CONFIG: Record<
@@ -45,7 +50,7 @@ const TYPE_CONFIG: Record<
 
 interface NotifCardProps {
   item: Notification;
-  onPress: (id: string) => void;
+  onPress: (id: string) => Promise<boolean>;
 }
 
 export function NotifCard({ item, onPress }: NotifCardProps) {
@@ -53,22 +58,31 @@ export function NotifCard({ item, onPress }: NotifCardProps) {
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
   const cfg = TYPE_CONFIG[item.type];
+  const opening = useRef(false);
 
-  const handlePress = () => {
-    if (!item.read) onPress(item.id);
-    router.push({
-      pathname: "/(tabs)/notification/[id]",
-      params: {
-        id: item.id,
-        type: item.type,
-        title: item.title,
-        message: item.message,
-        channel: item.channel,
-        time: item.time,
-        sent_at_full: item.sent_at_full,
-        read: String(item.read),
-      },
-    });
+  const handlePress = async () => {
+    if (opening.current) return;
+    opening.current = true;
+    try {
+      const read = item.read || await onPress(item.id);
+      router.push({
+        pathname: "/(tabs)/notification/[id]",
+        params: {
+          id: item.id,
+          type: item.type,
+          title: item.title,
+          message: item.message,
+          channel: item.channel,
+          time: item.time,
+          sent_at_full: item.sent_at_full,
+          read: String(read),
+          location: item.location || "",
+          affected_area: item.affected_area || "",
+          source_info: item.source || "",
+          safety_instructions: JSON.stringify(item.safety_instructions || []),
+        },
+      });
+      } finally { opening.current = false; }
   };
 
   return (
@@ -79,36 +93,31 @@ export function NotifCard({ item, onPress }: NotifCardProps) {
         styles.item,
         {
           borderBottomColor: theme.border,
-          opacity: item.read ? 0.45 : 1,
         },
       ]}
     >
-      {/* Icon with unread dot */}
+      {!item.read && <View testID="notification-unread-indicator" style={[styles.unreadIndicator, { backgroundColor: theme.primary }]}/>}
       <View style={styles.iconWrap}>
-        <View style={[styles.iconBubble, { backgroundColor: cfg.iconBg }]}>
-          <IconSymbol name={cfg.icon} size={20} color={cfg.iconColor} />
+        <View style={[styles.iconBubble, { backgroundColor: item.type === "emergency" ? theme.emergencyBg : theme.communityBg }]}>
+          <IconSymbol name={cfg.icon} size={18} color={item.type === "emergency" ? theme.error : theme.primary} />
         </View>
-        {!item.read && (
-          <View
-            style={[styles.unreadDot, { backgroundColor: theme.primary }]}
-          />
-        )}
       </View>
 
       {/* Content */}
       <View style={styles.content}>
-        <Text numberOfLines={2} style={[styles.title, { color: theme.text }]}>
+        <Text numberOfLines={2} ellipsizeMode="tail" style={[styles.title, { color: theme.text, fontWeight: item.read ? "500" : "700" }]}>
           {item.title}
         </Text>
         {item.message ? (
           <Text
-            numberOfLines={1}
+            numberOfLines={2}
+            ellipsizeMode="tail"
             style={[styles.desc, { color: theme.secondary }]}
           >
             {item.message}
           </Text>
         ) : null}
-        <Text style={[styles.time, { color: theme.primary }]}>{item.time}</Text>
+        <Text style={[styles.time, { color: theme.secondary }]}>{item.time}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -119,6 +128,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     paddingVertical: 12,
+    paddingHorizontal: 8,
     gap: 12,
     borderBottomWidth: 0.5,
   },
@@ -127,21 +137,19 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   iconBubble: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
-  unreadDot: {
+  unreadIndicator: {
     position: "absolute",
-    top: -2,
-    right: -2,
-    width: 9,
-    height: 9,
-    borderRadius: 999,
-    borderWidth: 1.5,
-    borderColor: "#fff",
+    left: 0,
+    top: 12,
+    bottom: 12,
+    width: 2,
+    borderRadius: 1,
   },
   content: { flex: 1 },
   title: {

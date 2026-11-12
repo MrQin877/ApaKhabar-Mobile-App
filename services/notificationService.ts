@@ -11,7 +11,9 @@ export const getNotifications = async () => {
       ? payload.notifications
       : Array.isArray(payload)
         ? payload
-        : [];
+        : null;
+
+    if (!notifications) throw new Error("Invalid notification API response");
 
     return notifications;
   } catch (error: any) {

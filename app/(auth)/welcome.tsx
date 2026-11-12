@@ -1,5 +1,7 @@
 import React from "react";
-import { StatusBar, useWindowDimensions, View } from "react-native";
+import { ScrollView, StatusBar, useWindowDimensions, View } from "react-native";
+import { useAssets } from "expo-asset";
+import { SvgUri } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WelcomeActions } from "../../components/auth/WelcomeActions";
 import { WelcomeHeader } from "../../components/auth/WelcomeHeader";
@@ -8,14 +10,19 @@ import { useColorScheme } from "../../hooks/use-color-scheme";
 import { useWelcomeAnimations } from "../../hooks/useWelcomeAnimations";
 import { welcomeStyles } from "../../styles/welcome";
 
+// Keep SVG as a Metro asset; react-native-svg supports the export's mask filters.
+const mascotAsset = require("../../assets/images/ApaKhabar IP Mascot(1).svg");
+
 export default function WelcomeScreen() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
+  const [mascotAssets] = useAssets(mascotAsset);
+  const mascotUri = mascotAssets?.[0]?.localUri ?? mascotAssets?.[0]?.uri ?? null;
 
-  const isSmall = height < 680;
-  const sidePad = width * 0.07;
+  const sidePad = Math.max(20, Math.min(40, width * 0.07));
+  const mascotSize = Math.min(width - sidePad * 2, Math.max(160, height * 0.34), 380);
 
   // Animations
   const { fadeTop, translateY, fadeButtons, translateB } =
@@ -57,6 +64,7 @@ export default function WelcomeScreen() {
       />
 
       {/* ── Top content ── */}
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, minHeight: height - insets.top }} showsVerticalScrollIndicator={false}>
       <WelcomeHeader
         width={width}
         height={height}
@@ -66,7 +74,10 @@ export default function WelcomeScreen() {
       />
 
       {/* ── Spacer ── */}
-      <View style={{ flex: 1 }} />
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: sidePad, paddingVertical: 16, minHeight: mascotSize + 32 }}>
+        <SvgUri uri={mascotUri} width={mascotSize} height={mascotSize}
+          preserveAspectRatio="xMidYMid meet" accessibilityLabel="Maskot ApaKhabar"/>
+      </View>
 
       {/* ── Buttons ── */}
       <WelcomeActions
@@ -76,6 +87,7 @@ export default function WelcomeScreen() {
         fadeButtons={fadeButtons}
         translateB={translateB}
       />
+      </ScrollView>
     </View>
   );
 }

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useCallback, useContext, useState } from "react";
 
 interface NotificationContextType {
   unreadCount: number;
@@ -24,8 +24,8 @@ export function NotificationProvider({
   const [unreadCount, setUnreadCount] = useState(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const showToast = (message: string) => setToastMessage(message);
-  const dismissToast = () => setToastMessage(null);
+  const showToast = useCallback((message: string) => setToastMessage(message), []);
+  const dismissToast = useCallback(() => setToastMessage(null), []);
 
   return (
     <NotificationContext.Provider

@@ -1,10 +1,12 @@
+import { NotificationSkeleton, NotificationState } from "@/components/notification/NotificationState";
+import { useNotificationPermission } from "@/hooks/useNotificationPermission";
+import { Button } from "heroui-native/button";
+import { notificationDateLabel, notificationInstructions } from "@/utils/notifications";
 import {
   NotifCard,
-  NotifFooter,
   NotifHeader,
   type Notification,
 } from "@/components/notification";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { getTheme } from "@/constants/theme";
 import { useNotificationCount } from "@/context/NotificationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -13,7 +15,6 @@ import {
   markAllRead,
   markRead,
 } from "@/services/notificationService";
-import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, {
   useCallback,
@@ -23,13 +24,12 @@ import React, {
   useState,
 } from "react";
 import {
-  ActivityIndicator,
+  AppState,
   FlatList,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -43,8 +43,6 @@ type HeaderItem = {
 type NotifItem = { kind: "notif"; data: Notification; key: string };
 type ListItem = HeaderItem | NotifItem;
 
-const STALE_TIME = 5 * 60 * 1000;
-
 export default function NotificationScreen() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
@@ -54,14 +52,23 @@ export default function NotificationScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const lastFetchRef = useRef<number>(0);
+  const inFlight = useRef(false);
+  const loaded = useRef(false);
+  const confirmedReads = useRef(new Set<string>());
+  const markingAll = useRef(false);
+  const [readError, setReadError] = useState<string | null>(null);
+  const [markingAllRead, setMarkingAllRead] = useState(false);
+  const permission = useNotificationPermission();
 
   const unreadCount = notifs.filter((n) => !n.read).length;
-  const emergencyUnread = notifs.find((n) => n.type === "emergency" && !n.read);
 
-  const fetchNotifications = async () => {
+
+  const fetchNotifications = useCallback(async (refresh = false) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setLoading(!refresh && !loaded.current);
+    setRefreshing(refresh || loaded.current);
     try {
-      setLoading(true);
       setError(null);
       const data = await getNotifications();
       const items = Array.isArray(data) ? data : [];
@@ -78,9 +85,14 @@ export default function NotificationScreen() {
         channel: n.channel ?? "Aplikasi",
         time: n.sent_at,
         sent_at_full: n.sent_at_full ?? "",
-        read: n.is_read,
+        read: n.is_read === true || n.is_read === 1 || confirmedReads.current.has(n.id),
+        location: n.location,
+        affected_area: n.affected_area,
+        source: n.source,
+        safety_instructions: notificationInstructions(n.safety_instructions),
       }));
       setNotifs(mapped);
+      loaded.current = true;
 
       // Show toast if there's an unread emergency  ← add this
       const unreadDarurat = mapped.find(
@@ -93,59 +105,68 @@ export default function NotificationScreen() {
       setError("Gagal memuatkan notifikasi");
     } finally {
       setLoading(false);
+      setRefreshing(false);
+      inFlight.current = false;
     }
-  };
+  }, [showToast]);
 
   useFocusEffect(
     useCallback(() => {
-      const now = Date.now();
-      if (now - lastFetchRef.current > STALE_TIME) {
-        fetchNotifications();
-        lastFetchRef.current = now;
-      }
-    }, []),
+      void fetchNotifications(loaded.current);
+      void permission.check();
+    }, [fetchNotifications, permission.check]),
   );
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", state => {
+      if (state === "active") void fetchNotifications(loaded.current);
+    });
+    return () => subscription.remove();
+  }, [fetchNotifications]);
   useEffect(() => {
     const count = notifs.filter((n) => !n.read).length;
     setUnreadCount(count);
   }, [notifs]);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchNotifications();
-    lastFetchRef.current = Date.now();
-    setRefreshing(false);
-  };
+  const handleRefresh = () => fetchNotifications(true);
 
   const handleMarkRead = async (id: string) => {
     try {
       await markRead(id);
+      confirmedReads.current.add(id);
+      setReadError(null);
       setNotifs((prev) =>
         prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
       );
+      return true;
     } catch (err) {
       console.error("Failed to mark as read", err);
+      setReadError("Notifikasi tidak dapat ditandakan dibaca. Cuba sekali lagi.");
+      return false;
     }
   };
 
-  const handleMarkAllRead = async (date?: string) => {
+  const handleMarkAllRead = async () => {
+    if (markingAll.current) return;
+    markingAll.current = true;
+    setMarkingAllRead(true);
+    const ids = new Set(notifs.map(n => n.id));
     try {
       await markAllRead();
-      setNotifs((prev) =>
-        prev.map((n) => {
-          if (!date) return { ...n, read: true };
-          const d = n.sent_at_full?.split(",")[0] ?? "Hari ini";
-          return d === date ? { ...n, read: true } : n;
-        }),
-      );
+      ids.forEach(id => confirmedReads.current.add(id));
+      setReadError(null);
+      setNotifs((prev) => prev.map((n) => ids.has(n.id) ? { ...n, read: true } : n));
     } catch (err) {
       console.error("Failed to mark all as read", err);
+      setReadError("Notifikasi tidak dapat ditandakan dibaca. Cuba sekali lagi.");
+    } finally {
+      markingAll.current = false;
+      setMarkingAllRead(false);
     }
   };
 
   const flatList = useMemo<ListItem[]>(() => {
     const groups = notifs.reduce<Record<string, Notification[]>>((acc, n) => {
-      const date = n.sent_at_full?.split(",")[0] ?? "Hari ini";
+      const date = notificationDateLabel(n.sent_at_full || "");
       if (!acc[date]) acc[date] = [];
       acc[date].push(n);
       return acc;
@@ -173,205 +194,42 @@ export default function NotificationScreen() {
           <Text style={[styles.sectionLabel, { color: theme.text }]}>
             {item.date}
           </Text>
-          {item.hasUnread && (
-            <TouchableOpacity onPress={() => handleMarkAllRead(item.date)}>
-              <Text style={[styles.markReadBtn, { color: theme.primary }]}>
-                Tandai dibaca
-              </Text>
-            </TouchableOpacity>
-          )}
+
         </View>
       );
     }
     return <NotifCard item={item.data} onPress={handleMarkRead} />;
   };
 
-  return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: theme.background,
-        paddingTop: insets.top,
-      }}
-    >
-      <NotifHeader unreadCount={unreadCount} />
-
-      {/* Loading */}
-      {loading && (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={theme.primary} />
-          <Text style={[styles.centerText, { color: theme.secondary }]}>
-            Memuatkan...
-          </Text>
-        </View>
-      )}
-
-      {/* Error */}
-      {error && !loading && (
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={theme.primary}
-              colors={[theme.primary]}
-            />
-          }
-        >
-          <View style={styles.center}>
-            <Ionicons
-              name="cloud-offline-outline"
-              size={48}
-              color={theme.secondary}
-            />
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>
-              Ralat
-            </Text>
-            <Text style={[styles.centerText, { color: theme.secondary }]}>
-              {error}
-            </Text>
-            <TouchableOpacity
-              onPress={fetchNotifications}
-              style={[styles.retryBtn, { borderColor: theme.primary }]}
-            >
-              <Text style={[styles.retryText, { color: theme.primary }]}>
-                Cuba lagi
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      )}
-
-      {/* Empty */}
-      {!loading && !error && notifs.length === 0 && (
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={theme.primary}
-              colors={[theme.primary]}
-            />
-          }
-        >
-          <View style={styles.center}>
-            <Ionicons
-              name="notifications-off-outline"
-              size={64}
-              color={theme.secondary}
-            />
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>
-              Tiada Notifikasi
-            </Text>
-            <Text style={[styles.centerText, { color: theme.secondary }]}>
-              Anda tidak mempunyai sebarang notifikasi buat masa ini
-            </Text>
-          </View>
-        </ScrollView>
-      )}
-
-      {/* List — keep FlatList for performance */}
-      {!loading && !error && notifs.length > 0 && (
-        <FlatList
-          data={flatList}
-          keyExtractor={(item) => item.key}
-          contentContainerStyle={[styles.listContent, { flexGrow: 1 }]}
-          renderItem={renderItem}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={theme.primary}
-              colors={[theme.primary]}
-            />
-          }
-          ListHeaderComponent={
-            emergencyUnread ? (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => handleMarkRead(emergencyUnread.id)}
-                style={[
-                  styles.emergencyBanner,
-                  { backgroundColor: theme.warning },
-                ]}
-              >
-                <View style={styles.emergencyIconWrap}>
-                  <IconSymbol
-                    name="exclamationmark.triangle.fill"
-                    size={18}
-                    color={theme.error}
-                  />
-                </View>
-                <View style={styles.emergencyContent}>
-                  <Text style={[styles.emergencyTitle, { color: theme.error }]}>
-                    Darurat!
-                  </Text>
-                  <Text
-                    numberOfLines={2}
-                    style={[styles.emergencyText, { color: theme.error }]}
-                  >
-                    {emergencyUnread.title}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ) : null
-          }
-          ListFooterComponent={<NotifFooter />}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-    </View>
-  );
+  const refreshControl = <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.primary} colors={[theme.primary]}/>;
+  const permissionPrompt = <NotificationState kind="permission" theme={theme} onAction={permission.open} busy={permission.busy} actionError={permission.actionError}/>;
+  return <View style={{ flex: 1, backgroundColor: theme.background, paddingTop: insets.top }}>
+    <NotifHeader unreadCount={unreadCount}/>
+    {loading && notifs.length === 0 ? <NotificationSkeleton theme={theme}/> : notifs.length > 0 ? <>
+      <View style={[styles.toolbar, { borderBottomColor: theme.border }]}>
+        <Text accessibilityLiveRegion="polite" style={{ color: theme.primary, fontSize: 12, fontWeight: "600" }}>{unreadCount ? `${unreadCount} belum dibaca` : "Semua sudah dibaca"}</Text>
+        {unreadCount > 0 ? <Button variant="ghost" className="h-auto min-w-0 p-0" isDisabled={markingAllRead} onPress={handleMarkAllRead} style={{ minHeight: 44 }}><Text style={{ color: theme.primary, fontSize: 11 }}>Tandakan semua dibaca</Text></Button>
+          : <Text style={{ color: theme.text, fontSize: 11, paddingVertical: 14 }}>Selesai</Text>}
+      </View>
+      <FlatList data={flatList} keyExtractor={item => item.key} renderItem={renderItem}
+        contentContainerStyle={styles.listContent} refreshControl={refreshControl} showsVerticalScrollIndicator={false}
+        ListHeaderComponent={<>
+          {readError && <Text accessibilityRole="alert" style={{ color: theme.error, fontSize: 12, paddingVertical: 8 }}>{readError}</Text>}
+          {error && <View style={[styles.inlineError, { borderColor: theme.border }]}><Text accessibilityRole="alert" style={{ color: theme.error, flex: 1, fontSize: 12 }}>Notifikasi tidak dapat dikemas kini.</Text><Button variant="ghost" className="h-auto min-w-0 px-2 py-3" isDisabled={refreshing} onPress={handleRefresh}><Text style={{ color: theme.primary, fontSize: 12 }}>Cuba lagi</Text></Button></View>}
+          {permission.disabled && <NotificationState kind="permission" compact theme={theme} onAction={permission.open} busy={permission.busy} actionError={permission.actionError}/>}
+        </>}/>
+    </> : <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stateContent} refreshControl={refreshControl}>
+      {error ? <NotificationState kind="error" theme={theme} onAction={() => void fetchNotifications()} busy={refreshing}/>
+        : permission.disabled ? permissionPrompt : loaded.current ? <NotificationState kind="empty" theme={theme}/> : null}
+    </ScrollView>}
+  </View>;
 }
 
 const styles = StyleSheet.create({
-  listContent: { paddingHorizontal: 16, paddingBottom: 32 },
-  sectionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: 16,
-    paddingBottom: 6,
-  },
+  toolbar: { marginHorizontal: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, borderBottomWidth: 0.5 },
+  listContent: { paddingHorizontal: 16, paddingBottom: 32, flexGrow: 1 },
+  sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 16, paddingBottom: 6 },
   sectionLabel: { fontSize: 13, fontWeight: "700" },
-  markReadBtn: { fontSize: 11, fontWeight: "600" },
-  emergencyBanner: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 4,
-  },
-  emergencyIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: "#FEE8E8",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  emergencyContent: { flex: 1 },
-  emergencyTitle: { fontSize: 12, fontWeight: "700", marginBottom: 2 },
-  emergencyText: { fontSize: 12, lineHeight: 17 },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-    gap: 10,
-  },
-  centerText: { fontSize: 13, textAlign: "center" },
-  emptyTitle: { fontSize: 16, fontWeight: "700", textAlign: "center" },
-  retryBtn: {
-    marginTop: 6,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  retryText: { fontSize: 13, fontWeight: "600" },
+  stateContent: { flexGrow: 1, justifyContent: "center", paddingBottom: 24 },
+  inlineError: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderBottomWidth: 0.5 },
 });
