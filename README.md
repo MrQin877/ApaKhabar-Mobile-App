@@ -1,100 +1,252 @@
 # ApaKhabar Mobile App (Repo C)
 
-## 1. Project Overview
+ApaKhabar Mobile is built using **Expo and React Native**. It connects to the Laravel backend (Repo A) to display news, notifications, comments, and user information.
 
-ApaKhabar Mobile is built with Expo and React Native. It fetches news, broadcasts, comments, likes, and other data from the Laravel backend.
+## 1. Requirements
 
-The backend runs through Docker in Repo A. The mobile app does not need Docker installed separately.
+Before starting, make sure you have:
 
-## 2. Requirements
+- Node.js and npm
+- Docker Desktop
+- Repo A (Laravel backend)
+- Repo C (Mobile app)
+- Expo Go (if compatible) or an Expo development build
+- Phone and laptop connected to the same Wi-Fi
 
-- Node.js and npm.
-- Expo Go (if compatible) or an Expo development build.
-- Docker Desktop and Repo A only when running the backend locally.
-- Phone and laptop connected to the same Wi-Fi for local testing.
+For installation instructions, refer to **`SETUP_REQUIREMENT.txt`**.
 
-## 3. Start Laravel Backend (Repo A)
+## 2. First-Time Setup
 
-Open Docker Desktop, then run from the Laravel repository:
+### Step 1 — Install Mobile Dependencies
 
-```bash
-cd "C:\Testxampp\htdocs\ApaKhabar-Intelligence-Information-News-Management-System"
-docker compose --env-file deployment/.env -f deployment/compose.yaml -f deployment/compose.lan.yaml up -d --no-build
-```
-
-The LAN override allows your phone to connect to Laravel on port `8088`. This command assumes Repo A's Docker environment and images are already set up.
-
-## 4. Configure Mobile API
-
-The mobile app's root `.env` currently uses:
-
-```ini
-EXPO_PUBLIC_API_BASE_URL=http://192.168.68.54:8088/api
-```
-
-`192.168.68.54` is the laptop's Wi-Fi IP address and may change. Find the current address with:
+Open the Repo C folder in VS Code:
 
 ```powershell
-ipconfig
+cd "C:\Testxampp\htdocs\ApaKhabar-Mobile-App"
+npm install
 ```
 
-Look for **IPv4 Address** under the **Wi-Fi** adapter. If it changes, update the IP in the mobile `.env` URL, keeping `:8088/api`. Also update `LAN_IP` in Repo A's `deployment/.env` and rerun the backend startup command.
+### Step 2 — Set Up Docker (Repo A)
 
-Restart Expo after changing the URL.
+Make sure Repo A's Docker environment files and dependencies are configured according to Repo A's setup guide.
 
-## 5. Start Mobile App (Repo C)
+Open Docker Desktop and make sure the engine is running.
 
-Run from the mobile repository:
+Then run:
+
+```powershell
+cd "C:\Testxampp\htdocs\ApaKhabar-Intelligence-Information-News-Management-System"
+powershell -NoProfile -ExecutionPolicy Bypass -File .\deployment\start-local.ps1 -Build
+```
+
+This builds and starts the backend.
+
+### Step 3 — Start Mobile (Repo C)
+
+Open another terminal:
 
 ```powershell
 cd "C:\Testxampp\htdocs\ApaKhabar-Mobile-App"
 npx expo start --lan --clear
 ```
 
-On first setup, run `npm install` in this directory before starting Expo.
+Scan the QR code using Expo Go or your development build.
 
-Scan the terminal's QR code using Expo Go if it supports this project's Expo SDK, or open it with a compatible installed development build.
+## 3. Daily Startup
 
-## 6. Check API Connection
+After completing the first-time setup, use these commands whenever you want to run ApaKhabar.
 
-Before opening the mobile app, open this URL in your phone's browser:
+**Terminal 1 — Repo A**
 
-[http://192.168.68.54:8088/api/news](http://192.168.68.54:8088/api/news)
+Open Docker Desktop first, then run:
 
-If JSON news data appears, your phone can reach the Laravel API. Use the current Wi-Fi IP if it has changed.
+```powershell
+cd "C:\Testxampp\htdocs\ApaKhabar-Intelligence-Information-News-Management-System"
+powershell -NoProfile -ExecutionPolicy Bypass -File .\deployment\start-local.ps1
+```
 
-If it does not load, check that Docker is running, both devices use the same Wi-Fi, and Windows Firewall allows port `8088` on your private network.
+**Terminal 2 — Repo C**
 
-## 7. Common Commands
-
-Start Expo from Repo C:
-
-```bash
+```powershell
+cd "C:\Testxampp\htdocs\ApaKhabar-Mobile-App"
 npx expo start --lan --clear
 ```
 
-Stop Expo: press `Ctrl + C` in its terminal.
+**Note:** You do not need to rebuild Docker every time. Repo A's launcher starts the backend and automatically detects your laptop's LAN IP.
 
-Check Docker status from Repo A:
+## 4. Automatic IP Detection
 
-```bash
-docker compose --env-file deployment/.env -f deployment/compose.yaml -f deployment/compose.lan.yaml ps
+Repo C automatically detects the laptop's LAN IP when running Expo.
+
+For local development, keep the `.env` API URL empty or remove the override:
+
+```env
+EXPO_PUBLIC_API_BASE_URL=
 ```
 
-Stop Docker services from Repo A:
+No manual IP updates are needed when changing Wi-Fi.
 
-```bash
-docker compose --env-file deployment/.env -f deployment/compose.yaml -f deployment/compose.lan.yaml stop
+Repo A must be running and accessible on port `8088` for mobile features to load data.
+
+## 5. Test Backend Connection
+
+On your laptop, open:
+
+```text
+http://localhost:8088/api/news
 ```
 
-## 8. Azure Deployment
+On your phone, open:
 
-After deploying Laravel to Azure, replace the local Wi-Fi URL with your Azure HTTPS API URL:
-
-```ini
-EXPO_PUBLIC_API_BASE_URL=https://YOUR_APP.azurewebsites.net/api
+```text
+http://YOUR_LAN_IP:8088/api/news
 ```
 
-Set this value in the mobile build environment for deployment. Restart Expo for local testing, or rebuild the deployed app to apply the change.
+Use the LAN IP displayed by Repo A's startup script.
 
-The mobile app remains separate from Docker and connects to Laravel through the internet.
+- **JSON appears:** Backend connection works.
+- **Cannot connect:** Check Docker, Wi-Fi, and Windows Firewall.
+- **Mobile UI opens but data fails:** Check the resolved API URL in the Expo terminal.
+
+Docker is not needed for UI-only testing, but it is required for backend features when using the local Docker API.
+
+## 6. Stop the Application
+
+**Stop Expo:**
+
+Press `Ctrl + C` in the Repo C terminal.
+
+**Stop Docker:**
+
+Run from Repo A:
+
+```powershell
+docker compose --env-file deployment/.env -f deployment/compose.yaml stop
+```
+
+This stops the containers without deleting database records or Docker volumes.
+
+## 7. Troubleshooting
+
+### Expo Cannot Start
+
+If you see:
+
+```text
+Cannot find module 'expo-router/_ctx-shared'
+```
+
+Check the installed versions:
+
+```powershell
+npm ls expo expo-router --depth=0
+npm ls -g expo --depth=0
+```
+
+An outdated global Expo installation may cause a conflict.
+
+To remove it:
+
+```powershell
+npm uninstall -g expo
+```
+
+Then restore the project dependencies:
+
+```powershell
+npm install
+```
+
+Restart Expo:
+
+```powershell
+npx expo start --lan --clear
+```
+
+### Missing Expo Executable
+
+Check:
+
+```powershell
+Test-Path .\node_modules\.bin\expo.cmd
+```
+
+If it returns `False`, run:
+
+```powershell
+npm install
+```
+
+If still missing, check:
+
+```powershell
+npm config get bin-links
+```
+
+### Check Expo Dependencies
+
+```powershell
+npx expo-doctor
+```
+
+If version mismatches appear:
+
+```powershell
+npx expo install --check
+```
+
+### Mobile Cannot Load Data
+
+1. Make sure Repo A Docker is running.
+2. Connect your phone and laptop to the same Wi-Fi.
+3. Test the Laravel API using your phone browser.
+4. Check the API URL logged by Expo.
+5. Restart Expo with `npx expo start --lan --clear`.
+
+### Website Shows 502 Bad Gateway
+
+Check the backend status:
+
+```powershell
+docker ps
+```
+
+If necessary, inspect the Nginx and Laravel logs:
+
+```powershell
+docker logs apakhabar-docker-web-1 --tail 50
+docker logs apakhabar-docker-app-1 --tail 50
+```
+
+### Docker Cannot Start
+
+Make sure Docker Desktop is open and shows **Engine running**.
+
+Then restart Repo A using the normal startup command.
+
+## 8. Important Notes
+
+- Repo A runs Laravel, MariaDB, and backend services through Docker.
+- Repo C runs the mobile app using Expo.
+- XAMPP and `composer run dev` are not required when using Docker.
+- Local LAN IP detection does not apply to deployed production APIs.
+- When deploying to Azure, configure `EXPO_PUBLIC_API_BASE_URL` with the real HTTPS API URL.
+- Never upload passwords, API keys, or private `.env` credentials to GitHub.
+- Do not delete Docker volumes when troubleshooting.
+
+## Profile photos
+
+Use **Edit Foto Profil** on the profile page to select and crop a gallery image.
+Confirmed crops and photo removal save immediately using the existing authenticated
+Laravel service, without a separate Save action. Missing photos show the first
+letter of the user's name. Photos are public on
+profiles and existing comments/replies. Refresh or reopen the comment sheet after
+a photo is changed on another device.
+
+The API accepts JPEG, PNG and WebP up to 5 MB and 4096 pixels per side. Repo A must
+deploy the profile-photo API and its additive migration (see Repo A
+docs/profile-photos.md). No database reset or new storage volume is needed.
+
+expo-image-picker is installed for the current Expo SDK. Expo Go includes it.
+Rebuild custom development/standalone apps to include the native module and app.json
+gallery configuration; camera and microphone permissions are disabled.

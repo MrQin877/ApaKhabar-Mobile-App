@@ -1,18 +1,22 @@
 import type { TextInputInstance } from "react-native";
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { getTheme } from '../../constants/theme';
 import { useColorScheme } from '../../hooks/use-color-scheme';
 
-export function OtpCodeInput({ value, onChange, disabled }: {
+export function OtpCodeInput({ value, onChange, disabled, hasError, onSubmit }: {
   value: string[];
   onChange: (digits: string[]) => void;
   disabled?: boolean;
+  hasError?: boolean;
+  onSubmit?: () => void;
 }) {
   const theme = getTheme(useColorScheme());
+  const [focused, setFocused] = useState<number | null>(null);
   const inputs = useRef<(TextInputInstance | null)[]>([]);
 
   function change(index: number, text: string) {
+    if (disabled) return;
     const digits = text.replace(/[^0-9]/g, '').slice(0, 6);
     const next = [...value];
     const start = digits.length === 6 ? 0 : index;
@@ -42,13 +46,17 @@ export function OtpCodeInput({ value, onChange, disabled }: {
           keyboardType="number-pad"
           autoComplete={index === 0 ? 'sms-otp' : 'off'}
           textContentType={index === 0 ? 'oneTimeCode' : 'none'}
+          onFocus={() => setFocused(index)}
+          onBlur={() => setFocused(current => current === index ? null : current)}
+          onSubmitEditing={onSubmit}
+          returnKeyType={index === 5 ? "done" : "next"}
           selectTextOnFocus
           autoCorrect={false}
           editable={!disabled}
           maxLength={6}
           placeholder="0"
           placeholderTextColor={theme.secondary}
-          style={[styles.digit, { color: theme.text, borderColor: theme.border }]}
+          style={[styles.digit, { color: theme.text, backgroundColor: focused === index ? theme.communityBg : theme.accent, borderColor: hasError ? theme.error : focused === index ? theme.primary : theme.border }]}
         />
       ))}
     </View>

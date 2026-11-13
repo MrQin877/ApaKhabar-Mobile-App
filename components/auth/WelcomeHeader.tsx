@@ -1,5 +1,5 @@
 import React from "react";
-import { Animated, Image, Text } from "react-native";
+import { Animated, Image, Text, View } from "react-native";
 import { getTheme } from "../../constants/theme";
 import { useColorScheme } from "../../hooks/use-color-scheme";
 
@@ -12,60 +12,23 @@ interface WelcomeHeaderProps {
 }
 
 export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
-  width,
-  height,
-  sidePad,
-  fadeTop,
-  translateY,
+  width, height, sidePad, fadeTop, translateY,
 }) => {
-  const colorScheme = useColorScheme();
-  const theme = getTheme(colorScheme);
-  const isSmall = height < 680;
-
+  const theme = getTheme(useColorScheme());
+  const compact = height < 700;
+  const fontSize = Math.min(36, width * 0.082);
   return (
-    <Animated.View
-      style={[
-        {
-          paddingHorizontal: sidePad,
-          paddingTop: isSmall ? 24 : 40,
-          opacity: fadeTop,
-          transform: [{ translateY }],
-        },
-      ]}
-    >
-      {/* Logo */}
-      <Image
-        source={require("../../assets/images/APAKHABAR_LOGO.png")}
-        style={[{ width: width * 0.1, height: width * 0.1 }]}
-        resizeMode="contain"
-      />
-
-      {/* Title */}
-      <Text
-        style={[
-          {
-            color: theme.text,
-            fontSize: Math.min(isSmall ? 30 : 38, width * 0.095),
-            marginTop: isSmall ? 20 : 28,
-            fontWeight: "800",
-            lineHeight: isSmall ? 36 : 44,
-          },
-        ]}
-      >
+    <Animated.View style={{ paddingHorizontal: sidePad, paddingTop: compact ? 18 : 28,
+      opacity: fadeTop, transform: [{ translateY }] }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <Image source={require("../../assets/images/APAKHABAR_LOGO.png")}
+          style={{ width: 32, height: 32 }} resizeMode="contain" accessible={false} />
+      </View>
+      <Text accessibilityRole="header" style={{ color: theme.text, fontSize,
+        marginTop: compact ? 24 : 36, fontWeight: "800", lineHeight: fontSize * 1.14 }}>
         Selamat Datang ke ApaKhabar
       </Text>
-
-      {/* Subtitle */}
-      <Text
-        style={[
-          {
-            marginTop: 10,
-            lineHeight: 22,
-            color: theme.secondary,
-            fontSize: isSmall ? 13 : 15,
-          },
-        ]}
-      >
+      <Text style={{ marginTop: 12, lineHeight: 22, color: theme.secondary, fontSize: 15 }}>
         Berita tempatan, lebih dekat dengan anda
       </Text>
     </Animated.View>

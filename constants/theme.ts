@@ -77,4 +77,10 @@ export function getTheme(
 }
 
 // Shared layout values for mobile surfaces.
-export const Design = { spacing: { xs: 4, sm: 8, md: 16, lg: 24 }, radius: { image: 10, card: 16, pill: 24 }, contentWidth: 680 };
+export const Design = {
+  spacing: { xs: 4, sm: 8, md: 16, lg: 24 },
+  radius: { image: 10, card: 16, pill: 24 },
+  contentWidth: 680,
+  primaryButton: { minHeight: 52, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center' as const, justifyContent: 'center' as const },
+  primaryButtonText: { fontSize: 14, lineHeight: 20, fontWeight: '700' as const },
+};

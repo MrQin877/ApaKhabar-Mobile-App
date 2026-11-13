@@ -1,19 +1,23 @@
+import { Button } from "heroui-native/button";
+import { passwordError, confirmationError, serverFieldErrors } from "@/utils/formValidation";
+import { FormError } from "@/components/ui/FormError";
 import { resetPhonePassword } from '../../services/phonePasswordReset';
 import { KeyboardForm } from '../../components/KeyboardForm';
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { passwordResetError, resetParameters } from '@/utils/passwordReset';
 import {
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
+
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AuthButton } from "../../components/auth/AuthButton";
 import { PasswordInput } from "../../components/auth/PasswordInput";
-import { getTheme } from "../../constants/theme";
+import { Design, getTheme } from "../../constants/theme";
 import { useColorScheme } from "../../hooks/use-color-scheme";
 import { resetPassword } from "../../services/authService";
 
@@ -22,27 +26,27 @@ export default function ResetPasswordScreen() {
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
 
-  const { token, email, phone, challenge } = useLocalSearchParams<{
-    token: string;
-    email: string;
-    phone?: string;
-    challenge?: string;
-  }>();
+  const { token, email, phone, challenge, valid } = resetParameters(useLocalSearchParams());
+  const submitting = useRef(false);
+  const linkError = valid ? '' : 'Pautan tidak sah atau telah tamat tempoh. Sila minta pautan baharu.';
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
+  const [done] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [focused, setFocused] = useState<"password" | "confirmation" | null>(null);
 
   const handleReset = async () => {
+    if (submitting.current) return;
     setError("");
+    if (!valid) { setError(linkError); return; }
+    setFieldErrors({ password: passwordError(password), password_confirmation: confirmationError(password)(confirm) });
     if (!password || password.length < 8) {
-      setError("Kata sandi mestilah sekurang-kurangnya 8 aksara.");
       return;
     }
     if (password !== confirm) {
-      setError("Kata sandi tidak sepadan.");
       return;
     }
     if (!token || (challenge ? !phone : !email)) {
@@ -50,10 +54,11 @@ export default function ResetPasswordScreen() {
       return;
     }
 
+    submitting.current = true;
     setLoading(true);
     try {
       if (challenge) await resetPhonePassword(challenge, token, password, confirm);
-      else await resetPassword(token, email, password, confirm);
+      else await resetPassword(token, email!, password, confirm);
       router.replace({
         pathname: "/(auth)/login",
         params: {
@@ -61,11 +66,10 @@ export default function ResetPasswordScreen() {
         },
       });
     } catch (err: any) {
-      setError(
-        err?.response?.data?.message ??
-          "Token tidak sah atau telah tamat tempoh.",
-      );
+      setFieldErrors(serverFieldErrors(err));
+      setError(passwordResetError(err));
     } finally {
+      submitting.current = false;
       setLoading(false);
     }
   };
@@ -76,20 +80,22 @@ export default function ResetPasswordScreen() {
         styles.container,
         { backgroundColor: theme.background, paddingTop: insets.top },
       ]}
+      contentContainerStyle={[styles.page, { paddingBottom: insets.bottom + 24, paddingLeft: insets.left, paddingRight: insets.right }]}
+      showsVerticalScrollIndicator={false}
     >
       <StatusBar
         barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
       />
 
       {/* Back button — same as forgot-password */}
-      <TouchableOpacity style={styles.back} onPress={() => router.back()}>
+      <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-lg px-0 py-2" style={styles.back} accessibilityLabel="Kembali" onPress={() => router.canGoBack() ? router.back() : router.replace('/(auth)/login')}>
         <Ionicons name="arrow-back" size={22} color={theme.text} />
-      </TouchableOpacity>
+      </Button>
 
       <View style={styles.inner}>
         {/* Icon */}
         <View
-          style={[styles.iconCircle, { backgroundColor: theme.primary + "20" }]}
+          style={[styles.iconCircle, { backgroundColor: theme.communityBg }]}
         >
           <Ionicons name="key-outline" size={36} color={theme.primary} />
         </View>
@@ -107,7 +113,7 @@ export default function ResetPasswordScreen() {
         {done ? (
           // ── Success state ──
           <View style={styles.successBox}>
-            <Ionicons name="checkmark-circle" size={48} color="#3FCC54" />
+            <Ionicons name="checkmark-circle" size={48} color={theme.primary} />
             <Text style={[styles.successText, { color: theme.text }]}>
               Kata sandi berjaya ditukar!
             </Text>
@@ -120,13 +126,13 @@ export default function ResetPasswordScreen() {
               Kata Sandi Baharu
             </Text>
             <PasswordInput
-              accessibilityLabel="Kata Sandi Baharu"
+              validate={passwordError} error={fieldErrors.password} accessibilityLabel="Kata Sandi Baharu"
               style={[
                 styles.input,
                 {
-                  borderColor: error ? theme.error : theme.border,
+                  borderColor: focused === "password" ? theme.primary : theme.border,
                   color: theme.text,
-                  backgroundColor: theme.background,
+                  backgroundColor: focused === "password" ? theme.communityBg : theme.accent,
                 },
               ]}
               placeholder="Masukkan kata sandi baharu"
@@ -134,8 +140,13 @@ export default function ResetPasswordScreen() {
               value={password}
               onChangeText={(t: string) => {
                 setPassword(t);
-                setError("");
+                setError(""); setFieldErrors({});
               }}
+              editable={!loading}
+              autoComplete="new-password"
+              textContentType="newPassword"
+              onFocus={() => setFocused("password")}
+              onBlur={() => setFocused(current => current === "password" ? null : current)}
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -145,13 +156,13 @@ export default function ResetPasswordScreen() {
               Sahkan Kata Sandi
             </Text>
             <PasswordInput
-              accessibilityLabel="Sahkan Kata Sandi"
+              validate={confirmationError(password)} error={fieldErrors.password_confirmation} accessibilityLabel="Sahkan Kata Sandi"
               style={[
                 styles.input,
                 {
-                  borderColor: error ? theme.error : theme.border,
+                  borderColor: focused === "confirmation" ? theme.primary : theme.border,
                   color: theme.text,
-                  backgroundColor: theme.background,
+                  backgroundColor: focused === "confirmation" ? theme.communityBg : theme.accent,
                 },
               ]}
               placeholder="Ulangi kata sandi baharu"
@@ -159,33 +170,41 @@ export default function ResetPasswordScreen() {
               value={confirm}
               onChangeText={(t: string) => {
                 setConfirm(t);
-                setError("");
+                setError(""); setFieldErrors({});
               }}
+              editable={!loading}
+              autoComplete="new-password"
+              textContentType="newPassword"
+              onFocus={() => setFocused("confirmation")}
+              onBlur={() => setFocused(current => current === "confirmation" ? null : current)}
               autoCapitalize="none"
               autoCorrect={false}
             />
 
+            <View style={[styles.helper, { backgroundColor: theme.communityBg }]}>
+              <Ionicons name="shield-checkmark-outline" size={18} color={theme.primary} accessible={false}/>
+              <Text style={[styles.helperText, { color: theme.primary }]}>Minimum 8 aksara untuk kata laluan baharu.</Text>
+            </View>
+
             {/* Error message */}
-            {error ? (
-              <Text style={[styles.errorText, { color: theme.error }]}>
-                {error}
-              </Text>
-            ) : null}
+            <FormError message={error || linkError}/>
 
             {/* Button */}
             <View style={styles.buttonWrapper}>
-              <AuthButton
+              <AuthButton variant="solid"
                 title="Tetapkan Kata Sandi"
                 onPress={handleReset}
                 loading={loading}
+                disabled={!valid}
               />
             </View>
           </View>
         )}
 
         {/* Back to login */}
+        {!!linkError && <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-lg px-0 py-2" style={styles.link} onPress={() => router.replace('/(auth)/forgot-password')}><Text style={[styles.linkText, { color: theme.primary }]}>Minta pautan baharu</Text></Button>}
         {!done && (
-          <TouchableOpacity
+          <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-lg px-0 py-2"
             style={styles.link}
             onPress={() => router.replace("/(auth)/login")}
           >
@@ -197,12 +216,12 @@ export default function ResetPasswordScreen() {
             <Text style={[styles.linkText, { color: theme.primary }]}>
               Kembali ke log masuk
             </Text>
-          </TouchableOpacity>
+          </Button>
         )}
 
         {/* After success — go to login */}
         {done && (
-          <TouchableOpacity
+          <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-lg px-0 py-2"
             style={styles.link}
             onPress={() => router.replace("/(auth)/login")}
           >
@@ -210,7 +229,7 @@ export default function ResetPasswordScreen() {
             <Text style={[styles.linkText, { color: theme.primary }]}>
               Log masuk sekarang
             </Text>
-          </TouchableOpacity>
+          </Button>
         )}
       </View>
     </KeyboardForm>
@@ -219,11 +238,12 @@ export default function ResetPasswordScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  back: { padding: 16 },
+  page: { flexGrow: 1, width: "100%", maxWidth: Design.contentWidth, alignSelf: "center" },
+  back: { width: 44, height: 44, marginLeft: 12, marginTop: 8, marginBottom: 12 },
   inner: {
     flexGrow: 1,
     flexShrink: 0,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingTop: 8,
     alignItems: "center",
   },
@@ -236,8 +256,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 28,
+    lineHeight: 36,
+    letterSpacing: -0.6,
+    fontWeight: "800",
     marginBottom: 10,
     textAlign: "center",
   },
@@ -251,7 +273,8 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: "600",
     marginBottom: 8,
     marginLeft: 2,
@@ -260,19 +283,20 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 52,
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 16,
+    borderRadius: 12,
+    paddingHorizontal: 14,
     fontSize: 15,
   },
+  helper: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12, borderRadius: 12, marginTop: 16, marginBottom: 12 },
+  helperText: { flex: 1, fontSize: 12, lineHeight: 18 },
   errorText: {
     fontSize: 12,
     marginTop: 4,
     marginLeft: 2,
   },
   buttonWrapper: {
-    marginTop: 24,
+    marginTop: 4,
     marginBottom: 8,
-    paddingHorizontal: 4,
   },
   successBox: {
     alignItems: "center",
@@ -285,6 +309,9 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   link: {
+    minHeight: 44,
+    alignSelf: "center",
+    justifyContent: "center",
     flexDirection: "row",
     alignItems: "center",
     gap: 6,

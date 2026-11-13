@@ -7,6 +7,8 @@ function load(file, mocks) {
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const exports = {};
   vm.runInNewContext(code, { exports, require: name => {
+    if (name === './newsLikes') return { observeNewsLikes() {}, newsLikesVersion: () => ({ generation: 0, revision: 0 }) };
+    if (name === './sessionEvents') return { subscribeSession() {} };
     if (!(name in mocks)) throw new Error(`Unmocked module: ${name}`);
     return mocks[name];
   }, Date, Intl, Set, Promise });

@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from "expo-router";
 // ── Register ──
 import React from "react";
 import { StatusBar, StyleSheet, View } from "react-native";
@@ -7,6 +8,7 @@ import { getTheme } from "../../constants/theme";
 import { useColorScheme } from "../../hooks/use-color-scheme";
 
 export default function RegisterScreen() {
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
@@ -21,7 +23,7 @@ export default function RegisterScreen() {
       <StatusBar
         barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
       />
-      <RegisterForm />
+      <RegisterForm returnTo={returnTo} />
     </View>
   );
 }

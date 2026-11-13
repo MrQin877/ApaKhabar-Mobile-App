@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { useColorScheme as useDeviceColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Uniwind } from 'uniwind';
@@ -24,6 +24,8 @@ export function AppearanceProvider({ children }: { children: React.ReactNode }) 
   const systemScheme = useDeviceColorScheme();
   const deviceScheme: ColorScheme = systemScheme === 'dark' ? 'dark' : 'light';
   const [appearance, setAppearanceState] = useState<AppearanceMode>('system');
+  const changed = useRef(false);
+  const pendingSave = useRef(Promise.resolve());
 
   useEffect(() => {
     Uniwind.setTheme(appearance);
@@ -31,11 +33,13 @@ export function AppearanceProvider({ children }: { children: React.ReactNode }) 
 
   // Load saved preference on mount
   useEffect(() => {
+    let active = true;
     AsyncStorage.getItem(STORAGE_KEY).then((saved) => {
-      if (saved === 'light' || saved === 'dark' || saved === 'system') {
+      if (active && !changed.current && (saved === 'light' || saved === 'dark' || saved === 'system')) {
         setAppearanceState(saved);
       }
     }).catch(() => { /* The system theme remains available without storage. */ });
+    return () => { active = false; };
   }, []);
 
   // Resolve: if system â†’ use device, otherwise use user choice
@@ -43,10 +47,12 @@ export function AppearanceProvider({ children }: { children: React.ReactNode }) 
     appearance === 'system' ? deviceScheme :
     appearance === 'dark'   ? 'dark'       : 'light';
 
-  const setAppearance = async (mode: AppearanceMode) => {
+  const setAppearance = (mode: AppearanceMode) => {
+    changed.current = true;
     setAppearanceState(mode);
-    try { await AsyncStorage.setItem(STORAGE_KEY, mode); }
-    catch { /* Apply this session's choice even if persistence is unavailable. */ }
+    // Serialize rapid selections so an older write cannot replace the latest choice.
+    pendingSave.current = pendingSave.current.then(() => AsyncStorage.setItem(STORAGE_KEY, mode))
+      .catch(() => { /* Keep the session choice if storage is unavailable. */ });
   };
 
   return (

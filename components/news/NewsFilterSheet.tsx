@@ -7,7 +7,7 @@ import { Button } from "heroui-native/button";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { Theme } from "@/constants/theme";
+import { Design, type Theme } from "@/constants/theme";
 import type { NewsDateFilter } from "@/utils/newsFilters";
 type Props = { visible: boolean; onClose: () => void; theme: Theme; categories: string[]; category: string; date: NewsDateFilter; onDate: (date: NewsDateFilter) => void; onCategory: (category: string) => void; dateOnly?: boolean; onApply?: () => void };
 export function NewsFilterSheet({ visible, onClose, theme, categories, category, date, onDate, onCategory, dateOnly = false, onApply }: Props) {
@@ -38,7 +38,7 @@ export function NewsFilterSheet({ visible, onClose, theme, categories, category,
           {categories.filter(name => name !== "Semua").map(name => option(name, category === name, () => onCategory(name)))}
           </>}
         </BottomSheetScrollView>}
-        {!showCalendar && <Button variant="ghost" className="h-auto min-h-12 min-w-0 rounded-xl px-4 py-3" accessibilityRole="button" onPress={onApply ?? onClose} style={[styles.apply, { backgroundColor: theme.primary }]}><Text style={{ color: "#FFFFFF", fontSize: 14, fontWeight: "700" }}>Lihat hasil</Text></Button>}
+        {!showCalendar && <Button variant="ghost" className="h-auto min-h-12 min-w-0 rounded-xl px-4 py-3" accessibilityRole="button" onPress={onApply ?? onClose} style={[styles.apply, Design.primaryButton, { backgroundColor: theme.primary }]}><Text style={{ ...Design.primaryButtonText, color: theme.background }}>Lihat hasil</Text></Button>}
         </View>
       </BottomSheet.Content>
     </BottomSheet.Portal>

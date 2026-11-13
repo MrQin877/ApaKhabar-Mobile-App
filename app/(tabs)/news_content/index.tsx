@@ -1,7 +1,7 @@
 import { useAppTheme } from "@/hooks/useAppTheme";
 import api from "@/services/api";
-import { router, useFocusEffect } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -26,10 +26,15 @@ import { readLatestBroadcast } from "@/utils/broadcasts";
 import { matchesNewsDate } from "@/utils/newsFilters";
 import type { NewsDateFilter } from "@/utils/newsFilters";
 import { NewsFilterSheet } from "@/components/news/NewsFilterSheet";
+import { ShortsSection } from "@/components/news/ShortsSection";
 
 const STALE_TIME = 5 * 60 * 1000;
 
 export default function BeritaIndex() {
+  const { section } = useLocalSearchParams<{ section?: string }>();
+  const scroll = useRef<import('react-native').ScrollViewInstance>(null);
+  const videoY = useRef(0);
+  useEffect(() => { if (section === 'videos') scroll.current?.scrollTo({ y: videoY.current, animated: true }); }, [section]);
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = useAppTheme();
@@ -131,6 +136,7 @@ export default function BeritaIndex() {
 
       {!loading && !error && (
         <ScrollView
+          ref={scroll}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
@@ -152,6 +158,7 @@ export default function BeritaIndex() {
             />
           )}
 
+          <View onLayout={event => { videoY.current = event.nativeEvent.layout.y; if (section === 'videos') scroll.current?.scrollTo({ y: videoY.current, animated: true }); }}><ShortsSection/></View>
           <View style={styles.latestHeader}>
             <Text accessibilityRole="header" style={{ color: theme.text, fontSize: 17, fontWeight: "700" }}>Terkini</Text>
             <Text accessibilityRole="link" onPress={() => router.push({ pathname: "/(tabs)/news_content/latest", params: { category: activeCategory, date: dateFilter } })} style={{ color: theme.primary, fontSize: 12, paddingVertical: 12 }}>Lihat semua</Text>

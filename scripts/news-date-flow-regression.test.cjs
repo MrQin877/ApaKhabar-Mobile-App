@@ -34,6 +34,7 @@ function nodes(tree) {
 const theme = new Proxy({}, { get: () => '#008000' });
 const h = hooks();
 const { NewsDateCalendar } = load('components/news/NewsDateCalendar.tsx', {
+  '@/constants/theme': load('constants/theme.ts', { 'react-native': { Platform: { select: value => value.default } } }),
   react: h.react, 'react/jsx-runtime': runtime,
   'react-native': { Text: 'Text', View: 'View', StyleSheet: { create: value => value } },
   '@gorhom/bottom-sheet': { BottomSheetScrollView: 'BottomSheetScrollView' },

@@ -3,7 +3,7 @@ import { Text, View, StyleSheet } from "react-native";
 import { Button } from "heroui-native/button";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
-import type { Theme } from "@/constants/theme";
+import { Design, type Theme } from "@/constants/theme";
 import { customDateRange, localDay, newsDateLabel, type NewsDateFilter } from "@/utils/newsFilters";
 
 export function NewsDateCalendar({ date, theme, onCancel, onConfirm }: {
@@ -62,7 +62,7 @@ export function NewsDateCalendar({ date, theme, onCancel, onConfirm }: {
     </BottomSheetScrollView>
     <View style={styles.footer}>
       <Button variant="ghost" className="h-auto min-w-0 rounded-xl px-4 py-3" onPress={onCancel} style={[styles.mode, styles.actionButton, { borderColor: theme.border }]}><Text style={{ color: theme.text }}>Batal</Text></Button>
-      <Button variant="ghost" className="h-auto min-w-0 rounded-xl px-4 py-3" isDisabled={!ready} onPress={() => { if (ready) onConfirm(selection); }} style={[styles.mode, styles.actionButton, { borderColor: theme.primary, backgroundColor: theme.primary, opacity: ready ? 1 : 0.45 }]}><Text style={{ color: "#FFFFFF", fontWeight: "700" }}>Sahkan</Text></Button>
+      <Button variant="ghost" className="h-auto min-w-0 rounded-xl px-4 py-3" isDisabled={!ready} onPress={() => { if (ready) onConfirm(selection); }} style={[styles.mode, styles.actionButton, Design.primaryButton, { borderColor: theme.primary, backgroundColor: theme.primary, opacity: ready ? 1 : 0.45 }]}><Text style={{ ...Design.primaryButtonText, color: theme.background }}>Sahkan</Text></Button>
     </View>
   </View>;
 }

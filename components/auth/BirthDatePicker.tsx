@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Button } from "heroui-native/button";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { Theme } from "@/constants/theme";
+import { Design, type Theme } from "@/constants/theme";
 import { birthDateBounds, validBirthDate } from "@/hooks/useRegistration";
 
 export function BirthDatePicker({ value, theme, onClose, onConfirm }: { value: string; theme: Theme; onClose: () => void; onConfirm: (day: string) => void }) {
@@ -48,7 +48,7 @@ export function BirthDatePicker({ value, theme, onClose, onConfirm }: { value: s
         </ScrollView>
         <View style={[styles.row, { paddingTop: 16 }]}>
           <Button variant="ghost" className="h-auto min-w-0 rounded-xl px-4 py-3" onPress={onClose} style={[styles.footer, { borderColor: theme.border }]}><Text style={{ color: theme.text }}>Batal</Text></Button>
-          <Button variant="ghost" className="h-auto min-w-0 rounded-xl px-4 py-3" isDisabled={!validBirthDate(selected)} onPress={() => onConfirm(selected)} style={[styles.footer, { backgroundColor: theme.primary, borderColor: theme.primary }]}><Text style={{ color: theme.background }}>Sahkan</Text></Button>
+          <Button variant="ghost" className="h-auto min-w-0 rounded-xl px-4 py-3" isDisabled={!validBirthDate(selected)} onPress={() => onConfirm(selected)} style={[styles.footer, Design.primaryButton, { backgroundColor: theme.primary, borderColor: theme.primary }]}><Text style={{ ...Design.primaryButtonText, color: theme.background }}>Sahkan</Text></Button>
         </View>
       </View>
     </View>

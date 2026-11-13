@@ -14,7 +14,7 @@ export const CommentRow = memo(function CommentRow({ comment, depth, theme, now,
   const [failedAvatar, setFailedAvatar] = useState<string | null>(null);
   const time = comment.created_at ? newsPostingTime({ created_at: comment.created_at, date: comment.date || "" } as NewsItem, new Date(now)) : comment.date;
   return <View style={[styles.row, { borderBottomColor: theme.border, marginLeft: Math.min(depth, 2) * 24 }]}>
-    {comment.avatar && failedAvatar !== comment.avatar ? <Image source={{ uri: newsImage(comment.avatar) }} onError={() => setFailedAvatar(comment.avatar || null)} style={styles.avatar}/>
+    {comment.avatar && failedAvatar !== comment.avatar ? <Image source={{ uri: newsImage(comment.avatar) }} onError={() => setFailedAvatar(comment.avatar || null)} resizeMode="cover" style={styles.avatar}/>
       : <View style={[styles.avatar, styles.initials, { backgroundColor: theme.communityBg }]}><Text style={{ color: theme.primary, fontSize: 11, fontWeight: "700" }}>{commentInitials(name)}</Text></View>}
     <View style={{ flex: 1, minWidth: 0 }}>
       <View style={styles.heading}><Text style={[styles.name, { color: theme.text }]}>{name}</Text>{!!time && <Text style={[styles.time, { color: theme.secondary }]}>{time}</Text>}</View>

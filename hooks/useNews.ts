@@ -8,6 +8,10 @@ export interface NewsItem {
   category: string;
   image: string;
   likes: number;
+  likes_count?: number;
+  liked_by_user?: boolean;
+  is_liked?: boolean;
+  liked?: boolean;
   comments: number;
   views: number;
   date: string;

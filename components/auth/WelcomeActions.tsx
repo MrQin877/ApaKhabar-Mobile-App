@@ -1,9 +1,8 @@
 import { router } from "expo-router";
 import React from "react";
 import { Animated, Text, TouchableOpacity } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { AUTH_STRINGS } from "../../constants/authData";
-import { AuthButton } from "./AuthButton";
+import { Design, getTheme } from "../../constants/theme";
+import { useColorScheme } from "../../hooks/use-color-scheme";
 
 interface WelcomeActionsProps {
   width: number;
@@ -14,57 +13,30 @@ interface WelcomeActionsProps {
 }
 
 export const WelcomeActions: React.FC<WelcomeActionsProps> = ({
-  width,
-  height,
-  sidePad,
-  fadeButtons,
-  translateB,
+  height, sidePad, fadeButtons, translateB,
 }) => {
-  const insets = useSafeAreaInsets();
-  const isSmall = height < 680;
-
+  const theme = getTheme(useColorScheme());
+  const actionTextStyle = { ...Design.primaryButtonText, fontSize: 16, lineHeight: 24,
+    textAlign: "center" as const };
   return (
-    <Animated.View
-      style={[
-        {
-          paddingHorizontal: sidePad,
-          paddingBottom: insets.bottom + (isSmall ? 24 : 36),
-          opacity: fadeButtons,
-          transform: [{ translateY: translateB }],
-        },
-      ]}
-    >
-      {/* Primary — filled gradient */}
-      <AuthButton
-        title={AUTH_STRINGS.signIn}
-        onPress={() => router.navigate("/(auth)/login")}
-      />
-
-      {/* Secondary — outline */}
-      <TouchableOpacity
-        style={[
-          {
-            borderColor: "#3FCC54",
-            marginTop: 12,
-            height: 54,
-            borderRadius: 12,
-            borderWidth: 1.5,
-            justifyContent: "center",
-            alignItems: "center",
-          },
-        ]}
-        onPress={() => router.navigate("/(auth)/register")}
-        activeOpacity={0.85}
-      >
-        <Text
-          style={{
-            color: "#3FCC54",
-            fontSize: 13,
-            fontWeight: "700",
-            letterSpacing: 1.5,
-          }}
-        >
-          {AUTH_STRINGS.signUp}
+    <Animated.View style={{ paddingHorizontal: sidePad, paddingBottom: height < 700 ? 16 : 28,
+      opacity: fadeButtons, transform: [{ translateY: translateB }], gap: 12 }}>
+      <TouchableOpacity accessibilityRole="button" activeOpacity={0.85}
+        style={[Design.primaryButton, { backgroundColor: theme.primary }]}
+        onPress={() => router.navigate("/(auth)/login")}>
+        <Text style={[actionTextStyle, { color: theme.background }]}>Log masuk</Text>
+      </TouchableOpacity>
+      <TouchableOpacity accessibilityRole="button" activeOpacity={0.85}
+        style={[Design.primaryButton, { backgroundColor: theme.background, borderColor: theme.primary, borderWidth: 1.5 }]}
+        onPress={() => router.navigate("/(auth)/register")}>
+        <Text style={[actionTextStyle, { color: theme.primary }]}>Daftar akun</Text>
+      </TouchableOpacity>
+      <TouchableOpacity accessibilityRole="link" activeOpacity={0.7}
+        style={{ minHeight: 48, paddingHorizontal: 16, paddingVertical: 12,
+          alignItems: "center", justifyContent: "center", marginTop: 4 }}
+        onPress={() => router.replace("/(tabs)/news_content")}>
+        <Text style={[actionTextStyle, { color: theme.primary }]}>
+          Teruskan sebagai tetamu
         </Text>
       </TouchableOpacity>
     </Animated.View>

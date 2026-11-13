@@ -1,3 +1,4 @@
+import { useNewsLike } from "@/hooks/useNewsLike";
 import { Card } from "heroui-native/card";
 import { PressableFeedback } from "heroui-native/pressable-feedback";
 import { useAppTheme } from "@/hooks/useAppTheme";
@@ -16,13 +17,15 @@ export function NewsMeta({ item }: { item: NewsItem }) {
   const author = typeof item.author === "string" ? item.author : item.author?.name;
   return <Text style={{ color: theme.secondary, fontSize: 11, lineHeight: 17 }}>{[author, item.time || item.date].filter(Boolean).join("  \u00b7  ")}</Text>;
 }
-export function NewsActions({ item }: { item: NewsItem }) {
+export function NewsActions({ item, replaceRoute = false }: { item: NewsItem; replaceRoute?: boolean }) {
   const theme = useAppTheme();
-  const open = () => router.push({ pathname: "/(tabs)/news_content/[id]", params: { id: item.id } });
+  const like = useNewsLike(item);
+  const open = (comments?: "open") => router[replaceRoute ? "replace" : "push"]({ pathname: "/(tabs)/news_content/[id]", params: { id: item.id, ...(comments ? { comments } : {}) } });
   return <View style={styles.actions}>
-    <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel={`${item.likes} suka, buka berita`} onPress={open} style={styles.action}><Ionicons name="heart-outline" size={17} color={theme.secondary}/><Text style={{ color: theme.secondary, fontSize: 12 }}>{item.likes}</Text></Button>
-    <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel={`${item.comments} komen, buka komen`} onPress={() => router.push({ pathname: "/(tabs)/news_content/[id]", params: { id: item.id, comments: "open" } })} style={styles.action}><Ionicons name="chatbubble-outline" size={16} color={theme.secondary}/><Text style={{ color: theme.secondary, fontSize: 12 }}>{item.comments}</Text></Button>
+    <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel={`${like.count} suka`} accessibilityState={{ selected: like.liked, disabled: like.pending }} isDisabled={like.pending} onPress={() => { void like.toggle().then(result => { if (result === null) open(); }).catch(() => {}); }} style={styles.action}><Ionicons name={like.liked ? "heart" : "heart-outline"} size={17} color={like.liked ? theme.primary : theme.secondary}/><Text style={{ color: theme.secondary, fontSize: 12 }}>{like.count}</Text></Button>
+    <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel={`${item.comments} komen, buka komen`} onPress={() => open("open")} style={styles.action}><Ionicons name="chatbubble-outline" size={16} color={theme.secondary}/><Text style={{ color: theme.secondary, fontSize: 12 }}>{item.comments}</Text></Button>
     <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel="Kongsi berita" onPress={() => { Share.share({ message: `${item.title}\n${BACKEND_BASE_URL}/news/${item.id}` }).catch(() => {}); }} style={styles.action}><Ionicons name="share-outline" size={17} color={theme.secondary}/><Text style={{ color: theme.secondary, fontSize: 12 }}>Kongsi</Text></Button>
+    {!!like.error && <Text accessibilityRole="alert" style={{ color: theme.error, fontSize: 12, flexBasis: "100%" }}>{like.error}</Text>}
   </View>;
 }
 export function FeaturedCard(item: NewsItem) {
@@ -41,6 +44,6 @@ export function FeaturedCard(item: NewsItem) {
 const styles = StyleSheet.create({
   image: { width: "100%", aspectRatio: 2, borderRadius: Design.radius.image },
   title: { fontSize: 23, lineHeight: 29, fontWeight: "500", marginTop: 6 },
-  actions: { flexDirection: "row", alignItems: "center", gap: 18, marginTop: 8 },
+  actions: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 18, marginTop: 8 },
   action: { flexDirection: "row", alignItems: "center", gap: 5, minHeight: 32 },
 });

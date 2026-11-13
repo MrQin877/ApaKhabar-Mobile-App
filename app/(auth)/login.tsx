@@ -11,7 +11,7 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
-  const { successMessage } = useLocalSearchParams<{ successMessage?: string }>();
+  const { successMessage, returnTo, method } = useLocalSearchParams<{ successMessage?: string; returnTo?: string; method?: string }>();
 
   return (
     <View
@@ -23,7 +23,7 @@ export default function LoginScreen() {
       <StatusBar
         barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
       />
-      <LoginForm initialStatus={successMessage ?? null} />
+      <LoginForm initialStatus={successMessage ?? null} returnTo={returnTo} identifierType={method === "email" ? "email" : undefined} />
     </View>
   );
 }

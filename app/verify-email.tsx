@@ -1,6 +1,8 @@
+import { FormError } from "@/components/ui/FormError";
+import { authDestination } from "../utils/authNavigation";
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View, StyleSheet, Platform } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthButton } from '../components/auth/AuthButton';
@@ -12,6 +14,7 @@ import { getTheme } from '../constants/theme';
 import { useColorScheme } from '../hooks/use-color-scheme';
 
 export default function VerifyEmailScreen() {
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const insets = useSafeAreaInsets();
   const theme = getTheme(useColorScheme());
   const { user, confirmed, loading, error, refresh } = useVerifiedProfile();
@@ -33,10 +36,10 @@ export default function VerifyEmailScreen() {
     if (!confirmed || !user?.email_verified_at || !registrationPending) return;
     let active = true;
     completeEmailRegistration(user)
-      .then(completed => { if (active && completed) router.replace('/(tabs)/news_content'); })
+      .then(completed => { if (active && completed) router.dismissTo(authDestination(returnTo)); })
       .catch(err => { if (active) setSendError(verificationError(err)); });
     return () => { active = false; };
-  }, [confirmed, user, registrationPending]);
+  }, [confirmed, user, registrationPending, returnTo]);
   const verified = confirmed && !!user?.email && !!user.email_verified_at;
   const unverified = confirmed && !loading && !!user?.email && user.email_verified_at === null;
 
@@ -67,19 +70,19 @@ export default function VerifyEmailScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: theme.background }} contentContainerStyle={[styles.page, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}>
-      <Ionicons name="mail-open-outline" size={56} color="#16803d" />
+      <Ionicons name="mail-open-outline" size={56} color={theme.primary} />
       <Text style={[styles.title, { color: theme.text }]}>Aktivasi e-mail</Text>
-      {loading && <ActivityIndicator color="#16803d" />}
+      {loading && <ActivityIndicator color={theme.primary} />}
       <Text style={[styles.email, { color: theme.text }]}>{user?.email ?? 'Alamat e-mail belum tersedia'}</Text>
       {verified && <ApprovedBadge />}
       {unverified && <Text style={[styles.body, { color: theme.text }]}>Periksa inbox dan folder spam anda. Klik tautan email konfirmasi untuk mengaktifkan alamat e-mail yang tersimpan di Profil.</Text>}
       {verified && <Text style={{ color: theme.text }}>Alamat e-mail anda telah disahkan.</Text>}
       {!!message && unverified && <Text accessibilityLiveRegion="polite" style={{ color: theme.text }}>{message}</Text>}
-      {!!(sendError || error) && <Text accessibilityRole="alert" style={{ color: theme.error }}>{sendError || error}</Text>}
+      <FormError message={sendError || error}/>
       <View style={{ width: '100%' }}>
-        {unverified && <AuthButton title="Kirim ulang email konfirmasi" onPress={resend} loading={sending} disabled={loading || !confirmed || !user?.email} />}
-        <AuthButton title="I have verified my email" onPress={check} loading={loading} disabled={sending} />
-        {registrationPending === false && <AuthButton title="Kembali ke Profil" onPress={() => router.replace('/(tabs)/profile')} disabled={sending} />}
+        {unverified && <AuthButton variant="solid" title="Kirim ulang email konfirmasi" onPress={resend} loading={sending} disabled={loading || !confirmed || !user?.email} />}
+        <AuthButton variant="solid" title="I have verified my email" onPress={check} loading={loading} disabled={sending} />
+        {registrationPending === false && <AuthButton variant="solid" title="Kembali ke Profil" onPress={() => router.replace('/(tabs)/profile')} disabled={sending} />}
       </View>
     </ScrollView>
   );
