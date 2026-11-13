@@ -1,6 +1,8 @@
+import { emailError, phoneError, passwordError, confirmationError, requiredError } from "../utils/formValidation";
+import { authDestination } from "../utils/authNavigation";
 import { useRef, useState } from "react";
 import { Platform } from "react-native";
-import { router, type Href } from "expo-router";
+import { router } from "expo-router";
 import { register } from "@/services/authService";
 import { VALIDATION_RULES } from "@/constants/authData";
 
@@ -14,7 +16,7 @@ export function validBirthDate(day: string, now = new Date()) {
   return /^\d{4}-\d{2}-\d{2}$/.test(day) && Number.isFinite(Date.parse(day))
     && new Date(day).toISOString().slice(0, 10) === day && day >= bounds.earliest && day <= bounds.today;
 }
-export function useRegistration() {
+export function useRegistration(returnTo?: string) {
   const [step, setStep] = useState(1);
   const [method, setMethod] = useState<"email" | "phone">("email");
   const [fields, setFields] = useState({ name: "", date_of_birth: "", citizenship: "", gender: "", ethnicity: "", email: "", phone: "", password: "", password_confirmation: "" });
@@ -23,7 +25,18 @@ export function useRegistration() {
   const pending = useRef(false);
   const update = (field: keyof typeof fields, value: string) => {
     setFields(prev => ({ ...prev, [field]: value }));
-    setErrors(prev => ({ ...prev, [field]: "", general: "" }));
+    const nextFields = { ...fields, [field]: value };
+    const validators: Record<string, (value: string) => string> = {
+      name: value => requiredError(value) || (value.trim().length > 255 ? "Nama maksimum 255 aksara." : ""),
+      email: emailError, phone: phoneError, password: passwordError,
+      password_confirmation: confirmationError(nextFields.password),
+      date_of_birth: value => validBirthDate(value) ? "" : "Pilih tarikh lahir yang sah.",
+      citizenship: value => ["wni", "wna", "dual"].includes(value) ? "" : "Pilih kewarganegaraan.",
+      ethnicity: value => value.trim().length > 100 ? "Etnik maksimum 100 aksara." : "",
+    };
+    setErrors(prev => ({ ...prev, [field]: validators[field]?.(value) ?? "", general: "",
+      ...(field === "password" && nextFields.password_confirmation
+        ? { password_confirmation: confirmationError(value)(nextFields.password_confirmation) } : {}) }));
   };
   const personalErrors = () => {
     const result: Record<string, string> = {};
@@ -49,7 +62,10 @@ export function useRegistration() {
       const response = await register(fields.name.trim(), method === "email" ? fields.email.trim() : undefined, fields.password, fields.password_confirmation,
         method === "phone" ? fields.phone : undefined, { date_of_birth: fields.date_of_birth, citizenship: fields.citizenship,
           ...(fields.gender ? { gender: fields.gender } : {}), ...(fields.ethnicity.trim() ? { ethnicity: fields.ethnicity.trim() } : {}) });
-      router.replace((Platform.OS !== "web" && method === "email" ? "/verify-email" : response.user?.phone && !response.user.phone_verified_at ? "/verify-phone" : "/(tabs)/news_content") as Href);
+      const verification = Platform.OS !== "web" && method === "email" ? "/verify-email" : response.user?.phone && !response.user.phone_verified_at ? "/verify-phone" : null;
+      if (verification) router.replace(returnTo ? { pathname: verification, params: { returnTo: authDestination(returnTo) } } : verification);
+      else if (returnTo) router.dismissTo(authDestination(returnTo));
+      else router.replace("/(tabs)/news_content");
     } catch (error: any) {
       const data = error?.response?.data;
       const mapped: Record<string, string> = {};

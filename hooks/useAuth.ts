@@ -1,3 +1,4 @@
+import { authDestination } from "../utils/authNavigation";
 import { router, type Href } from "expo-router";
 import { useRef, useState } from "react";
 import { Platform } from "react-native";
@@ -27,7 +28,7 @@ const getServerErrorMessage = (error: any) => {
   return "Permintaan gagal. Sila cuba lagi.";
 };
 
-export function useAuth() {
+export function useAuth(returnTo?: string) {
   const submitting = useRef(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -114,7 +115,8 @@ export function useAuth() {
 
     try {
       await apiLogin(email.trim(), password);
-      router.replace("/(tabs)/news_content");
+      if (returnTo) router.dismissTo(authDestination(returnTo));
+      else router.replace("/(tabs)/news_content");
     } catch (error: any) {
       setErrors({ general: getServerErrorMessage(error) });
       submitting.current = false;

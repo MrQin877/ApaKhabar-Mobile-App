@@ -59,6 +59,11 @@ export default function NotificationScreen() {
   const [readError, setReadError] = useState<string | null>(null);
   const [markingAllRead, setMarkingAllRead] = useState(false);
   const permission = useNotificationPermission();
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   const unreadCount = notifs.filter((n) => !n.read).length;
 
@@ -71,6 +76,7 @@ export default function NotificationScreen() {
     try {
       setError(null);
       const data = await getNotifications();
+      if (!mounted.current) return;
       const items = Array.isArray(data) ? data : [];
       const mapped: Notification[] = items.map((n: any) => ({
         id: n.id,

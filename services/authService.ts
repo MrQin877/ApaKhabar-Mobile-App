@@ -1,3 +1,4 @@
+import { sessionChanged } from "./sessionEvents";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import api from "./api";
@@ -11,6 +12,7 @@ const saveToken = async (token: string, user: any) => {
     await SecureStore.setItemAsync("auth_token", token);
     await SecureStore.setItemAsync("user", JSON.stringify(user ?? {}));
   }
+  sessionChanged();
 };
 
 const saveUser = async (user: any) => {
@@ -29,6 +31,7 @@ const clearToken = async () => {
     await SecureStore.deleteItemAsync("auth_token");
     await SecureStore.deleteItemAsync("user");
   }
+  sessionChanged();
 };
 
 const parseIdentifierPayload = (identifier: string) => {
@@ -150,6 +153,8 @@ export const getToken = async () => {
 };
 
 export interface UserProfile {
+  avatar?: string | null;
+  profile_photo_url?: string | null;
   id: string;
   name: string;
   email: string | null;
@@ -166,14 +171,22 @@ export const updateProfile = async (name: string, email: string): Promise<UserPr
 };
 
 export const getProfile = async (): Promise<UserProfile> => {
+  const token = await getToken();
+  if (!token) throw new Error('Authentication required');
   const response = await api.get("/profile", { timeout: 15000 });
+  if (await getToken() !== token) throw new Error('Session changed');
   await saveUser(response.data);
   return response.data;
 };
 
 export const forgotPassword = async (email: string) => {
   try {
-    const response = await api.post("/forgot-password", { email });
+    const { createURL } = await import('expo-linking');
+    // Expo Go uses its current Metro address; installed builds use the app scheme.
+    const sessionUrl = createURL('reset-password', { isTripleSlashed: true });
+    const return_url = sessionUrl.startsWith('apakhabarmobileapp:')
+      ? 'apakhabarmobileapp:///reset-password' : sessionUrl;
+    const response = await api.post("/forgot-password", { email: email.trim(), return_url }, { timeout: 30000 });
     console.log("[AUTH] ✅ Reset link sent |", email);
     return response.data;
   } catch (err: any) {
@@ -197,7 +210,7 @@ export const resetPassword = async (
       email,
       password,
       password_confirmation,
-    });
+    }, { timeout: 20000 });
     console.log("[AUTH] ✅ Password reset OK |", email);
     return response.data;
   } catch (err: any) {

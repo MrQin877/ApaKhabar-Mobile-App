@@ -1,4 +1,5 @@
-import React, { createContext, useCallback, useContext, useState } from "react";
+import { subscribeSession } from "@/services/sessionEvents";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 interface NotificationContextType {
   unreadCount: number;
@@ -23,6 +24,8 @@ export function NotificationProvider({
 }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => subscribeSession(() => { setUnreadCount(0); setToastMessage(null); }), []);
 
   const showToast = useCallback((message: string) => setToastMessage(message), []);
   const dismissToast = useCallback(() => setToastMessage(null), []);

@@ -6,6 +6,8 @@ function load(file, mocks = {}) {
   const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const exports = {};
   vm.runInNewContext(code, { exports, require: name => {
+    if (name === './newsLikes') return { observeNewsLikes() {}, newsLikesVersion: () => ({ generation: 0, revision: 0 }) };
+    if (name === './sessionEvents') return { subscribeSession() {} };
     if (!(name in mocks)) throw new Error(`Unmocked module: ${name}`);
     return mocks[name];
   } });
@@ -30,7 +32,7 @@ const rows = helpers.threadNewsComments(snapshot.comments);
 assert.deepEqual(Array.from(rows, row => `${row.comment.id}:${row.depth}`), ['1:0', '2:1', '3:2', '6:0']);
 assert.equal(helpers.commenterName({ user: 'Guest12345' }), 'Guest12345');
 assert.equal(helpers.commenterName({ author: { name: 'Nur Aina' } }), 'Nur Aina');
-assert.equal(helpers.commentInitials('  Nur   Aina  '), 'NA');
+assert.equal(helpers.commentInitials('  Nur   Aina  '), 'N');
 assert.match(helpers.commentSubmissionMessage({ status: 'pending_review' }), /menunggu semakan/);
 assert.match(helpers.commentSubmissionMessage({ status: 'published' }), /diterbitkan/);
 assert.match(helpers.commentSubmissionMessage({ status: 'rejected' }), /tidak diterbitkan/);
@@ -48,10 +50,11 @@ async function checkApi() {
   } };
   const service = load('services/newsService.ts', {
     './api': api, './newsFeedStore': { invalidateNewsFeed: () => invalidations++ }, './apiConfig': { API_BASE_URL: 'test' },
+    './guestCommentService': { submitPublicComment: async (path, kind, id, content) => (await api.post(path, { content })).data },
   });
   const result = await service.postComment('42', 'Root comment');
   assert.equal(result.status, 'pending_review');
-  await service.postCommentReply('7', 'Reply text');
+  await service.postCommentReply('7', 'Reply text', '42');
   await service.reportNewsComment('7', 'Reason for reporting');
   assert.deepEqual(JSON.parse(JSON.stringify(requests)), [
     { path: '/news/42/comment', body: { content: 'Root comment' } },

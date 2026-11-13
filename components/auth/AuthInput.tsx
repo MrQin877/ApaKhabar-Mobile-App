@@ -1,6 +1,7 @@
+import { FormError } from "../ui/FormError";
 // ── Reusable input component for auth screens (login, register) ──
 import React from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, TextInput, View } from "react-native";
 import { getTheme } from "../../constants/theme";
 import { useColorScheme } from "../../hooks/use-color-scheme";
 import { PasswordInput } from "./PasswordInput";
@@ -41,9 +42,7 @@ export function AuthInput({
         autoCapitalize="none"
         autoCorrect={false}
       />
-      {error && (
-        <Text style={[styles.error, { color: theme.error }]}>{error}</Text>
-      )}
+      <FormError inline message={error}/>
     </View>
   );
 }

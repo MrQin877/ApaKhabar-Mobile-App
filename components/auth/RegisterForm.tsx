@@ -1,3 +1,4 @@
+import { FormError } from "../ui/FormError";
 import { useState } from "react";
 import { ActivityIndicator, Alert, Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Button } from "heroui-native/button";
@@ -17,14 +18,14 @@ const options = {
   citizenship: [['wni', 'WNI (Indonesia)'], ['wna', 'WNA (Foreign citizen)'], ['dual', 'Dual citizenship']],
   gender: [['', 'Pilih jantina'], ['male', 'Lelaki'], ['female', 'Perempuan'], ['undisclosed', 'Tidak mahu nyatakan']],
 } as const;
-export function RegisterForm() {
+export function RegisterForm({ returnTo }: { returnTo?: string }) {
   const theme = getTheme(useColorScheme());
   const insets = useSafeAreaInsets();
-  const form = useRegistration();
+  const form = useRegistration(returnTo);
   const { fields, errors, loading, step, method } = form;
   const [picker, setPicker] = useState<"date" | "citizenship" | "gender" | null>(null);
   const inputStyle = (key: string) => [styles.input, { backgroundColor: theme.accent, color: theme.text, borderColor: errors[key] ? theme.error : theme.border }];
-  const error = (key: string) => errors[key] ? <Text accessibilityRole="alert" style={{ color: theme.error, fontSize: 12, lineHeight: 18 }}>{errors[key]}</Text> : null;
+  const error = (key: string) => <FormError message={errors[key]} inline={key !== "general"}/>;
   const field = (label: string, key: string, children: React.ReactNode) => <View style={styles.field}><Text style={[styles.label, { color: theme.text }]}>{label}</Text>{children}{error(key)}</View>;
   const textInput = (key: "name" | "ethnicity" | "email", placeholder: string, maxLength: number) => <TextInput value={fields[key]} onChangeText={value => form.update(key, value)}
     accessibilityLabel={placeholder} placeholder={placeholder} placeholderTextColor={theme.secondary} maxLength={maxLength} editable={!loading}
@@ -59,7 +60,7 @@ export function RegisterForm() {
         {field("Jantina (Pilihan)", "gender", select("gender"))}
         {field("Etnik (Pilihan)", "ethnicity", textInput("ethnicity", "Masukkan etnik", 100))}
         {step === 1 && error("general")}
-        <Button variant="ghost" className="h-auto min-w-0 rounded-xl px-4 py-3" onPress={() => { Keyboard.dismiss(); form.next(); }} style={[styles.primary, { backgroundColor: theme.primary }]}><Text style={{ color: theme.background, fontWeight: "700" }}>Seterusnya</Text></Button>
+        <Button variant="ghost" className="h-auto min-w-0 rounded-xl px-4 py-3" onPress={() => { Keyboard.dismiss(); form.next(); }} style={[styles.primary, { backgroundColor: theme.primary }]}><Text style={{ ...Design.primaryButtonText, color: theme.background }}>Seterusnya</Text></Button>
       </View>
       <View style={[styles.fields, { display: step === 2 ? "flex" : "none" }]}>
         <Text style={[styles.label, { color: theme.text }]}>Kaedah hubungan *</Text>
@@ -72,11 +73,11 @@ export function RegisterForm() {
         {step === 2 && error("general")}
         <View style={styles.buttons}>
           <Button variant="ghost" className="h-auto min-w-0 rounded-xl px-4 py-3" isDisabled={loading} onPress={back} style={[styles.secondary, { borderColor: theme.border }]}><Text style={{ color: theme.text }}>Kembali</Text></Button>
-          <Button variant="ghost" className="h-auto min-w-0 rounded-xl px-4 py-3" isDisabled={loading} accessibilityState={{ busy: loading }} onPress={() => { void form.submit(); }} style={[styles.primary, { flex: 1, marginTop: 0, backgroundColor: theme.primary }]}>{loading ? <ActivityIndicator color={theme.background}/> : <Text style={{ color: theme.background, fontWeight: "700" }}>Cipta akaun</Text>}</Button>
+          <Button variant="ghost" className="h-auto min-w-0 rounded-xl px-4 py-3" isDisabled={loading} accessibilityState={{ busy: loading }} onPress={() => { void form.submit(); }} style={[styles.primary, { flex: 1, marginTop: 0, backgroundColor: theme.primary }]}>{loading ? <ActivityIndicator color={theme.background}/> : <Text style={{ ...Design.primaryButtonText, color: theme.background }}>Cipta akaun</Text>}</Button>
         </View>
         <Text style={{ color: theme.secondary, fontSize: 11, lineHeight: 17, textAlign: "center" }}>Dengan mencipta akaun, anda bersetuju dengan <Text accessibilityRole="link" onPress={() => { if (!loading) router.push("/(tabs)/profile/data-privacy"); }} style={{ color: theme.primary }}>Dasar privasi</Text>.</Text>
       </View>
-      <View style={styles.login}><Text style={{ color: theme.secondary, fontSize: 12 }}>Sudah mempunyai akaun?</Text><Button variant="ghost" className="h-auto min-w-0 p-0" isDisabled={loading} onPress={() => router.replace("/(auth)/login")}><Text style={{ color: theme.primary, fontSize: 12, fontWeight: "600" }}>Log masuk</Text></Button></View>
+      <View style={styles.login}><Text style={{ color: theme.secondary, fontSize: 12 }}>Sudah mempunyai akaun?</Text><Button variant="ghost" className="h-auto min-w-0 p-0" isDisabled={loading} onPress={() => router.replace({ pathname: "/(auth)/login", params: { returnTo } })}><Text style={{ color: theme.primary, fontSize: 12, fontWeight: "600" }}>Log masuk</Text></Button></View>
     </KeyboardForm>
     {picker === "date" && <BirthDatePicker value={fields.date_of_birth} theme={theme} onClose={() => setPicker(null)} onConfirm={day => { form.update("date_of_birth", day); setPicker(null); }}/>}
     {(picker === "citizenship" || picker === "gender") && <Modal visible transparent animationType="slide" onRequestClose={() => setPicker(null)}><View style={{ flex: 1, backgroundColor: theme.overlay, justifyContent: "flex-end" }}><Pressable style={StyleSheet.absoluteFill} onPress={() => setPicker(null)}/><View accessibilityViewIsModal style={{ maxHeight: "75%", backgroundColor: theme.card, padding: 24, paddingBottom: insets.bottom + 24, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
@@ -90,5 +91,5 @@ const styles = StyleSheet.create({
   progress: { flexDirection: "row", position: "relative", paddingVertical: 16 }, progressItem: { width: "50%", alignItems: "center", gap: 6 }, circle: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center" }, track: { position: "absolute", left: "25%", right: "25%", height: 3, top: 31 },
   content: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 12, width: "100%", maxWidth: Design.contentWidth, alignSelf: "center" }, fields: { gap: 16 }, field: { gap: 8 }, label: { fontSize: 13, fontWeight: "600" },
   input: { minHeight: 50, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 }, select: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 50 },
-  primary: { minHeight: 50, borderRadius: 12, marginTop: 8 }, secondary: { flex: 1, minHeight: 50, borderWidth: 1, borderRadius: 12 }, buttons: { flexDirection: "row", gap: 12, marginTop: 8 }, notice: { flexDirection: "row", gap: 10, padding: 12, borderRadius: 12 }, login: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6, marginTop: 12 },
+  primary: { ...Design.primaryButton, marginTop: 8 }, secondary: { flex: 1, minHeight: 50, borderWidth: 1, borderRadius: 12 }, buttons: { flexDirection: "row", gap: 12, marginTop: 8 }, notice: { flexDirection: "row", gap: 10, padding: 12, borderRadius: 12 }, login: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6, marginTop: 12 },
 });

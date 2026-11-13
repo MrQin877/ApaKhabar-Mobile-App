@@ -1,3 +1,5 @@
+import { phoneError, serverFieldErrors } from "@/utils/formValidation";
+import { FormError } from "@/components/ui/FormError";
 import { KeyboardForm } from '../../../components/KeyboardForm';
 import React, { useState, useRef } from 'react';
 import {
@@ -21,16 +23,18 @@ export default function ChangePhoneScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const pending = useRef(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async () => {
     if (pending.current) return;
     setError('');
+    setFieldErrors({});
     if (!phone) {
-      setError('Sila isi semua ruangan.');
+      setFieldErrors({ phone: phoneError(phone) });
       return;
     }
     if (!/^\+(60|62)[1-9]\d{6,12}$/.test(phone)) {
-      setError('Format nombor telefon tidak sah. Contoh: +60123456789 atau +628123456789.');
+      setFieldErrors({ phone: phoneError(phone) });
       return;
     }
     pending.current = true;
@@ -39,6 +43,7 @@ export default function ChangePhoneScreen() {
       const result = await requestPhoneChangeOtp(phone);
       router.push({ pathname: '/verify-phone', params: { challenge: result.challenge } } as Href);
     } catch (err: any) {
+      setFieldErrors(serverFieldErrors(err));
       setError(phoneVerificationError(err));
     } finally {
       pending.current = false;
@@ -66,13 +71,13 @@ export default function ChangePhoneScreen() {
 
         <View style={styles.formContainer}>
           <Text style={[styles.label, { color: theme.text }]}>Nomor Telepon Baru</Text>
-          <PhoneNumberInput
+          <PhoneNumberInput error={fieldErrors.phone}
             value={phone}
-            onChangeText={(t) => { setPhone(t); setError(''); }}
+            onChangeText={(t) => { setPhone(t); setError(''); setFieldErrors({}); }}
             editable={!loading}
           />
 
-          {error ? <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text> : null}
+          <FormError message={error}/>
 
           <View style={styles.buttonWrapper}>
             <AuthButton title="Verifikasi Nomor Telepon" onPress={handleSubmit} loading={loading} />

@@ -1,7 +1,10 @@
+import { FormInput } from "../ui/FormInput";
+import { FormError } from "../ui/FormError";
+import { emailError, identifierError, passwordError } from "../../utils/formValidation";
 import { KeyboardForm } from "../KeyboardForm";
 import { router } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Button } from "heroui-native/button";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -10,10 +13,10 @@ import { useColorScheme } from "../../hooks/use-color-scheme";
 import { useAuth } from "../../hooks/useAuth";
 import { PasswordInput } from "./PasswordInput";
 
-export function LoginForm({ initialStatus }: { initialStatus?: string | null }) {
+export function LoginForm({ initialStatus, returnTo, identifierType }: { initialStatus?: string | null; returnTo?: string; identifierType?: "email" }) {
   const theme = getTheme(useColorScheme());
   const insets = useSafeAreaInsets();
-  const { email, setEmail, password, setPassword, loading, errors, login, clearErrors } = useAuth();
+  const { email, setEmail, password, setPassword, loading, errors, login, clearErrors } = useAuth(returnTo);
   const [focused, setFocused] = useState<"identifier" | "password" | null>(null);
   const handleLogin = () => { clearErrors(); void login(); };
   const inputStyle = (field: "identifier" | "password", error?: string) => [styles.input, {
@@ -39,34 +42,34 @@ export function LoginForm({ initialStatus }: { initialStatus?: string | null }) 
     {!!initialStatus && <View style={[styles.status, { backgroundColor: theme.communityBg }]}><Text accessibilityLiveRegion="polite" style={{ color: theme.primary, fontSize: 13 }}>{initialStatus}</Text></View>}
     <View style={styles.form}>
       <View style={styles.field}>
-        <Text style={[styles.label, { color: theme.text }]}>E-mel atau telefon</Text>
-        <TextInput accessibilityLabel="E-mel atau telefon" placeholder="E-mel atau nombor telefon" placeholderTextColor={theme.secondary}
+        <Text style={[styles.label, { color: theme.text }]}>{identifierType === "email" ? "E-mel" : "E-mel atau telefon"}</Text>
+        <FormInput validate={identifierType === "email" ? emailError : identifierError} error={errors.email} accessibilityLabel={identifierType === "email" ? "E-mel" : "E-mel atau telefon"} placeholder={identifierType === "email" ? "Alamat e-mel" : "E-mel atau nombor telefon"} placeholderTextColor={theme.secondary}
           value={email} onChangeText={text => { setEmail(text); clearErrors(); }} editable={!loading}
-          autoCapitalize="none" autoCorrect={false} keyboardType="default" autoComplete="username" textContentType="username" returnKeyType="next"
+          autoCapitalize="none" autoCorrect={false} keyboardType={identifierType === "email" ? "email-address" : "default"} autoFocus={identifierType === "email"} autoComplete="username" textContentType="username" returnKeyType="next"
           onFocus={() => setFocused("identifier")} onBlur={() => setFocused(null)} style={inputStyle("identifier", errors.email)}/>
-        {!!errors.email && <Text accessibilityRole="alert" style={[styles.error, { color: theme.error }]}>{errors.email}</Text>}
+
       </View>
       <View style={styles.field}>
         <Text style={[styles.label, { color: theme.text }]}>Kata laluan</Text>
-        <PasswordInput accessibilityLabel="Kata laluan" placeholder="Kata laluan" placeholderTextColor={theme.secondary}
+        <PasswordInput validate={passwordError} error={errors.password} accessibilityLabel="Kata laluan" placeholder="Kata laluan" placeholderTextColor={theme.secondary}
           value={password} onChangeText={text => { setPassword(text); clearErrors(); }} editable={!loading}
           autoComplete="current-password" textContentType="password" returnKeyType="go" onSubmitEditing={handleLogin}
           onFocus={() => setFocused("password")} onBlur={() => setFocused(null)} style={inputStyle("password", errors.password)}/>
-        {!!errors.password && <Text accessibilityRole="alert" style={[styles.error, { color: theme.error }]}>{errors.password}</Text>}
+
       </View>
       <Button variant="ghost" className="h-auto min-h-0 min-w-0 self-start rounded-none p-0" isDisabled={loading}
         onPress={() => router.navigate("/(auth)/forgot-password")} style={styles.forgot}>
         <Text style={{ color: theme.primary, fontSize: 12, fontWeight: "600" }}>Lupa kata laluan?</Text>
       </Button>
-      {!!errors.general && <Text accessibilityRole="alert" style={[styles.error, { color: theme.error }]}>{errors.general}</Text>}
+      <FormError message={errors.general}/>
       <Button variant="ghost" className="h-auto min-w-0 rounded-xl px-4 py-3" isDisabled={loading} accessibilityState={{ busy: loading, disabled: loading }}
         onPress={handleLogin} style={[styles.submit, { backgroundColor: theme.primary, opacity: loading ? 0.6 : 1 }]}>
-        {loading ? <ActivityIndicator color={theme.background} accessibilityLabel="Sedang log masuk"/> : <Text style={{ color: theme.background, fontSize: 13, fontWeight: "700" }}>Log masuk</Text>}
+        {loading ? <ActivityIndicator color={theme.background} accessibilityLabel="Sedang log masuk"/> : <Text style={{ ...Design.primaryButtonText, color: theme.background }}>Log masuk</Text>}
       </Button>
     </View>
     <View style={styles.footer}>
       <Text style={{ color: theme.secondary, fontSize: 12 }}>Belum mempunyai akaun?</Text>
-      <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" isDisabled={loading} onPress={() => router.replace("/(auth)/register")} style={{ minHeight: 44 }}>
+      <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" isDisabled={loading} onPress={() => router.replace({ pathname: "/(auth)/register", params: { returnTo } })} style={{ minHeight: 44 }}>
         <Text style={{ color: theme.primary, fontSize: 12, fontWeight: "700" }}>Daftar</Text>
       </Button>
     </View>
@@ -80,7 +83,7 @@ const styles = StyleSheet.create({
   description: { fontSize: 14, lineHeight: 21 }, form: { gap: 16 }, field: { gap: 8 },
   label: { fontSize: 13, fontWeight: "600" }, input: { minHeight: 50, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },
   forgot: { alignSelf: "flex-start", minHeight: 36, marginTop: -8 },
-  submit: { minHeight: 50, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  submit: { ...Design.primaryButton },
   footer: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", columnGap: 4, marginTop: 8 },
   status: { borderRadius: 12, padding: 12, marginBottom: 16 }, error: { fontSize: 12, lineHeight: 18 },
 });

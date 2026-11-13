@@ -1,3 +1,5 @@
+import { FormError } from "./ui/FormError";
+import { phoneError } from "../utils/formValidation";
 import React, { useState } from "react";
 import {
     Modal,
@@ -41,11 +43,14 @@ export function PhoneNumberInput({
 }: PhoneNumberInputProps) {
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
+  const [touched, setTouched] = useState(false);
+  const message = ((touched || value) ? phoneError(value) : "") || error;
   const [selectedCode, setCountryCode] = useState<PhoneCountry>("MY");
   const countryCode = getPhoneCountry(value) ?? selectedCode;
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
   const handlePhoneChange = (text: string) => {
+    setTouched(true);
     const nextCountry = getPhoneCountry(text) ?? countryCode;
     setCountryCode(nextCountry);
     onChangeText(formatPhoneNumber(text, nextCountry));
@@ -53,6 +58,7 @@ export function PhoneNumberInput({
 
   const handleCountryChange = (code: PhoneCountry) => {
     if (!editable) return;
+    setTouched(true);
     setCountryCode(code);
     setDropdownVisible(false);
     onChangeText(formatPhoneNumber(value, code));
@@ -69,7 +75,7 @@ export function PhoneNumberInput({
         style={[
           styles.inputWrapper,
           {
-            borderColor: error ? theme.error : theme.border,
+            borderColor: message ? theme.error : theme.border,
           },
         ]}
       >
@@ -176,9 +182,7 @@ export function PhoneNumberInput({
         </TouchableOpacity>
       </Modal>
 
-      {error && (
-        <Text style={[styles.error, { color: theme.error }]}>{error}</Text>
-      )}
+      <FormError inline message={message}/>
       <Text style={[styles.hint, { color: theme.secondary }]}>
         Pilih negara (MY / ID) dan masukkan nombor telefon anda.
       </Text>

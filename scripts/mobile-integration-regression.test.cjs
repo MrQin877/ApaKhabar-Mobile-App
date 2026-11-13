@@ -11,7 +11,7 @@ function load(file, dependencies, env = {}, dev = true) {
   } });
   return exports;
 }
-const config = (platform, hostUri, env = {}, dev = true) => load('services/apiConfig.ts', { 'expo-constants': { expoConfig: { hostUri } }, 'react-native': { Platform: { OS: platform } } }, env, dev);
+const config = (platform, hostUri, env = {}, dev = true) => load('services/apiConfig.ts', { 'expo-constants': { expoConfig: { hostUri } }, 'expo-linking': { createURL: () => undefined }, 'react-native': { Platform: { OS: platform }, NativeModules: {} } }, env, dev);
 assert.equal(config('web').API_BASE_URL, 'http://localhost:8088/api');
 assert.equal(config('android', '192.168.1.50:8081').API_BASE_URL, 'http://192.168.1.50:8088/api');
 assert.equal(config('ios', '192.168.1.50:8081').API_BASE_URL, 'http://192.168.1.50:8088/api');

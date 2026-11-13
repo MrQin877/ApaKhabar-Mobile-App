@@ -12,14 +12,14 @@ export interface PublicNewsComment {
   reported_by_user?: boolean;
   status?: string;
 }
-export interface NewsCommentsSnapshot { comments: PublicNewsComment[]; total: number }
-export interface CommentSubmission { status?: string; message?: string; remaining_quota?: number | null }
+export interface NewsCommentsSnapshot { comments: PublicNewsComment[]; total: number; nextPage?: number | null }
+export interface CommentSubmission { comments_count?: number; status?: string; message?: string; remaining_quota?: number | null }
 export function commenterName(comment: PublicNewsComment): string {
   const name = (value: PublicNewsComment["author"]) => typeof value === "string" ? value : value?.name;
   return name(comment.author) || name(comment.user) || "Pengguna";
 }
 export function commentInitials(name: string): string {
-  return name.trim().split(/\s+/).slice(0, 2).map(word => word[0] || "").join("").toLocaleUpperCase();
+  return (Array.from(name.trim())[0] || "?").toLocaleUpperCase();
 }
 export function readNewsComments(payload: unknown): NewsCommentsSnapshot {
   const wrapper = payload as { data?: unknown } | null;
@@ -74,4 +74,9 @@ export function commentErrorMessage(error: unknown): string {
   if (response?.status === 429) return "Terlalu banyak permintaan. Tunggu sebentar sebelum mencuba lagi.";
   if (typeof response?.data?.message === "string") return response.data.message;
   return "Permintaan gagal. Cuba lagi; teks anda masih disimpan.";
+}
+
+export function isGuestQuotaError(error: unknown): boolean {
+  const response = (error as { response?: { status?: number; data?: { code?: string } } })?.response;
+  return response?.status === 422 && response.data?.code === 'guest_comment_quota_exceeded';
 }

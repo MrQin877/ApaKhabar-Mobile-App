@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Button } from "heroui-native/button";
 import { Skeleton } from "heroui-native/skeleton";
 import { StyleSheet, Text, View } from "react-native";
-import type { Theme } from "@/constants/theme";
+import { Design, type Theme } from "@/constants/theme";
 
 export function NotificationSkeleton({ theme }: { theme: Theme }) {
   return <View accessibilityLabel="Memuatkan notifikasi" accessibilityState={{ busy: true }} style={styles.skeleton}>
@@ -30,7 +30,7 @@ export function NotificationState({ kind, theme, compact = false, onAction, busy
     </View>
     <Text accessibilityRole={kind === "error" ? "alert" : "header"} style={[styles.title, { color: theme.text }]}>{copy.title}</Text>
     <Text style={[styles.description, { color: theme.secondary }]}>{copy.description}</Text>
-    {!!copy.action && <Button variant="ghost" className="h-auto min-w-0 rounded-xl px-5 py-3" isDisabled={busy} onPress={onAction} style={[styles.action, { backgroundColor: theme.primary, opacity: busy ? 0.6 : 1 }]}><Text style={{ color: theme.background, fontSize: 12, fontWeight: "600" }}>{copy.action}</Text></Button>}
+    {!!copy.action && <Button variant="ghost" className="h-auto min-w-0 rounded-xl px-5 py-3" isDisabled={busy} onPress={onAction} style={[styles.action, Design.primaryButton, { backgroundColor: theme.primary, opacity: busy ? 0.6 : 1 }]}><Text style={{ ...Design.primaryButtonText, color: theme.background }}>{copy.action}</Text></Button>}
     {!!actionError && <Text accessibilityRole="alert" style={[styles.description, { color: theme.error }]}>{actionError}</Text>}
   </View>;
 }

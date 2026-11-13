@@ -1,6 +1,9 @@
+import { FormInput } from "@/components/ui/FormInput";
+import { emailError, serverFieldErrors } from "@/utils/formValidation";
+import { FormError } from "@/components/ui/FormError";
 import { KeyboardForm } from '../../../components/KeyboardForm';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Text, TextInput, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, Text, View, StyleSheet } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthButton } from '../../../components/auth/AuthButton';
@@ -20,12 +23,15 @@ export default function ChangeEmailScreen() {
   const [message, setMessage] = useState('');
   const [actionError, setActionError] = useState('');
   const pending = useRef(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const email = draft ?? user?.email ?? '';
   const dirty = email !== (user?.email ?? '');
   const approved = confirmed && !dirty && !!user?.email && !!user.email_verified_at;
 
   async function save() {
     if (pending.current || !user) return;
+    const invalid = emailError(email);
+    if (invalid) { setFieldErrors({ email: invalid }); return; }
     pending.current = true;
     setBusy(true);
     setMessage('');
@@ -36,6 +42,7 @@ export default function ChangeEmailScreen() {
       await refresh();
       setMessage('Alamat e-mail disimpan. Anda sekarang boleh mengirim email konfirmasi.');
     } catch (err) {
+      setFieldErrors(serverFieldErrors(err));
       setActionError(verificationError(err));
     } finally {
       pending.current = false;
@@ -52,6 +59,7 @@ export default function ChangeEmailScreen() {
       await resendVerification();
       router.push('/verify-email' as Href);
     } catch (err) {
+      setFieldErrors(serverFieldErrors(err));
       setActionError(verificationError(err));
     } finally {
       pending.current = false;
@@ -64,9 +72,9 @@ export default function ChangeEmailScreen() {
       <Text style={[styles.title, { color: theme.text }]}>Alamat e-mail</Text>
       <Text style={{ color: theme.text }}>Simpan perubahan sebelum mengirim email konfirmasi.</Text>
       {loading && <ActivityIndicator color="#16803d" />}
-      <TextInput accessibilityLabel="Alamat e-mail" value={email} onChangeText={setDraft} editable={!!user && !busy && !loading} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" placeholder="email@contoh.com" placeholderTextColor={theme.secondary} style={[styles.input, { borderColor: theme.border, color: theme.text }]} />
+      <FormInput validate={emailError} error={fieldErrors.email} accessibilityLabel="Alamat e-mail" value={email} onChangeText={value => { setDraft(value); setFieldErrors({}); setActionError(""); }} editable={!!user && !busy && !loading} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" placeholder="email@contoh.com" placeholderTextColor={theme.secondary} style={[styles.input, { borderColor: theme.border, color: theme.text }]} />
       {approved && <ApprovedBadge />}
-      {!!(actionError || error) && <Text accessibilityRole="alert" style={{ color: theme.error }}>{actionError || error}</Text>}
+      <FormError message={actionError || error}/>
       {!!message && <Text accessibilityLiveRegion="polite" style={{ color: theme.text }}>{message}</Text>}
       {dirty && <Text style={{ color: theme.text }}>Perubahan belum disimpan.</Text>}
       <View>

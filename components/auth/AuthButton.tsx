@@ -6,8 +6,7 @@ import {
   Text,
   TouchableOpacity,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { getTheme } from "../../constants/theme";
+import { Design, getTheme } from "../../constants/theme";
 import { useColorScheme } from "../../hooks/use-color-scheme";
 
 interface AuthButtonProps {
@@ -15,6 +14,7 @@ interface AuthButtonProps {
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
+  variant?: "solid";
 }
 
 export function AuthButton({
@@ -28,41 +28,31 @@ export function AuthButton({
 
   return (
     <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!(loading || disabled), busy: !!loading }}
       onPress={onPress}
       disabled={loading || disabled}
       activeOpacity={0.88}
+      style={[styles.button, { backgroundColor: theme.primary }, (loading || disabled) && styles.disabled]}
     >
-      <LinearGradient
-        colors={["#3FCC54", "#00B99B"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={[styles.button, (loading || disabled) && styles.disabled]}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.text}>{title}</Text>
-        )}
-      </LinearGradient>
+      {loading ? (
+        <ActivityIndicator color={theme.background} />
+      ) : (
+        <Text style={[styles.text, { color: theme.background }]}>{title}</Text>
+      )}
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    height: 54,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
+    ...Design.primaryButton,
     marginTop: 16,
   },
   disabled: {
     opacity: 0.6,
   },
   text: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 1.5,
+    ...Design.primaryButtonText,
   },
 });

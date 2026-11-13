@@ -1,3 +1,7 @@
+import { Button } from "heroui-native/button";
+import { FormInput } from "@/components/ui/FormInput";
+import { emailError, phoneError, serverFieldErrors } from "@/utils/formValidation";
+import { FormError } from "@/components/ui/FormError";
 import { PhoneNumberInput } from '../../components/phone-number-input';
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { requestPhonePasswordReset } from '../../services/phonePasswordReset';
@@ -5,15 +9,16 @@ import { phoneVerificationError } from '../../services/phoneVerification';
 import { KeyboardForm } from '../../components/KeyboardForm';
 import React, { useState, useRef } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, StatusBar, TextInput,
+  View, Text, StyleSheet,  StatusBar,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthButton } from '../../components/auth/AuthButton';
 import { forgotPassword } from '../../services/authService';
-import { getTheme } from '../../constants/theme';
+import { Design, getTheme } from '../../constants/theme';
 import { useColorScheme } from '../../hooks/use-color-scheme';
+import { passwordResetError } from '@/utils/passwordReset';
 
 export default function ForgotPasswordScreen() {
   const insets = useSafeAreaInsets();
@@ -27,6 +32,8 @@ export default function ForgotPasswordScreen() {
   const [resendLoading, setResendLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [emailFocused, setEmailFocused] = useState(false);
 
   const [sendDisabled, setSendDisabled] = useState(false);
   const [sendCountdown, setSendCountdown] = useState(0);
@@ -61,10 +68,11 @@ export default function ForgotPasswordScreen() {
 
   const handleSend = async () => {
     setError('');
+    setFieldErrors({});
     if (loading) return;
     if (method === 'phone') {
       if (!/^\+(60|62)[1-9]\d{6,12}$/.test(phone)) {
-        setError('Sila masukkan nombor telefon Malaysia atau Indonesia yang sah.');
+        setFieldErrors({ phone: phoneError(phone) });
         return;
       }
       setLoading(true);
@@ -72,12 +80,13 @@ export default function ForgotPasswordScreen() {
         const result = await requestPhonePasswordReset(phone);
         router.push({ pathname: '/verify-phone', params: { purpose: 'password-reset', challenge: result.challenge! } });
       } catch (err) {
+        setFieldErrors(serverFieldErrors(err));
         setError(phoneVerificationError(err));
       } finally { setLoading(false); }
       return;
     }
-    if (!email) {
-      setError('Sila masukkan e-mel anda.');
+    if (emailError(email)) {
+      setFieldErrors({ email: emailError(email) });
       return;
     }
     setLoading(true);
@@ -88,7 +97,8 @@ export default function ForgotPasswordScreen() {
       // so when the success page appears the button is already counting down.
       startCountdown('resend');
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'E-mel tidak dijumpai.');
+      setFieldErrors(serverFieldErrors(err));
+      setError(passwordResetError(err));
       // Still throttle the send button on failure to prevent spamming.
       startCountdown('send');
     } finally {
@@ -97,11 +107,14 @@ export default function ForgotPasswordScreen() {
   };
 
   const handleResend = async () => {
+    if (resendLoading || resendDisabled) return;
+    setError('');
     setResendLoading(true);
     try {
       await forgotPassword(email);
     } catch (err: any) {
-      // silently fail — countdown still runs
+      setFieldErrors(serverFieldErrors(err));
+      setError(passwordResetError(err)); // Countdown still runs.
     } finally {
       setResendLoading(false);
       startCountdown('resend');
@@ -111,15 +124,15 @@ export default function ForgotPasswordScreen() {
   // ── Full-page success screen ──
   if (sent) {
     return (
-      <KeyboardForm style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
+      <KeyboardForm style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]} contentContainerStyle={[styles.page, { paddingBottom: insets.bottom + 24, paddingLeft: insets.left, paddingRight: insets.right }]} showsVerticalScrollIndicator={false}>
         <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
 
         <View style={styles.successPage}>
 
           {/* Top — icon + title + email, vertically centered */}
           <View style={styles.successTop}>
-            <View style={[styles.successIconCircle, { backgroundColor: '#3FCC5420' }]}>
-              <Ionicons name="mail-outline" size={48} color="#3FCC54" />
+            <View style={[styles.successIconCircle, { backgroundColor: theme.communityBg }]}>
+              <Ionicons name="mail-outline" size={48} color={theme.primary} />
             </View>
 
             <Text style={[styles.successTitle, { color: theme.text }]}>
@@ -142,8 +155,9 @@ export default function ForgotPasswordScreen() {
               Semak peti masuk atau folder spam anda dan ikut pautan untuk menetapkan semula kata laluan.
             </Text>
 
+            <FormError message={error}/>
             <View style={styles.resendWrapper}>
-              <AuthButton
+              <AuthButton variant="solid"
                 title={
                   resendDisabled
                     ? `Hantar pautan tetapan semula (${resendCountdown}s)`
@@ -155,7 +169,7 @@ export default function ForgotPasswordScreen() {
               />
             </View>
 
-            <TouchableOpacity
+            <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-lg px-0 py-2"
               style={styles.link}
               onPress={() => router.replace('/(auth)/login')}
             >
@@ -163,7 +177,7 @@ export default function ForgotPasswordScreen() {
               <Text style={[styles.linkText, { color: theme.primary }]}>
                 Kembali ke log masuk
               </Text>
-            </TouchableOpacity>
+            </Button>
           </View>
 
         </View>
@@ -173,15 +187,15 @@ export default function ForgotPasswordScreen() {
 
   // ── Normal form screen ──
   return (
-    <KeyboardForm style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
+    <KeyboardForm style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]} contentContainerStyle={[styles.page, { paddingBottom: insets.bottom + 24, paddingLeft: insets.left, paddingRight: insets.right }]} showsVerticalScrollIndicator={false}>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
 
-      <TouchableOpacity style={styles.back} onPress={() => router.back()}>
+      <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-lg px-0 py-2" style={styles.back} accessibilityLabel="Kembali" onPress={() => router.back()}>
         <Ionicons name="arrow-back" size={22} color={theme.text} />
-      </TouchableOpacity>
+      </Button>
 
       <View style={styles.inner}>
-        <View style={[styles.iconCircle, { backgroundColor: theme.primary + '20' }]}>
+        <View style={[styles.iconCircle, { backgroundColor: theme.communityBg }]}>
           <Ionicons name="lock-open-outline" size={36} color={theme.primary} />
         </View>
 
@@ -193,7 +207,7 @@ export default function ForgotPasswordScreen() {
         </Text>
 
         <View style={styles.formContainer}>
-          <Tabs value={method} onValueChange={value => { if (!loading) { setMethod(value as 'email' | 'phone'); setError(''); } }}>
+          <Tabs value={method} onValueChange={value => { if (!loading) { setMethod(value as 'email' | 'phone'); setError(''); setFieldErrors({}); } }}>
             <TabsList tabs={['email', 'phone']}>
               <TabsTrigger value="email">E-mel</TabsTrigger>
               <TabsTrigger value="phone">Nombor telefon</TabsTrigger>
@@ -203,36 +217,37 @@ export default function ForgotPasswordScreen() {
             {method === 'email' ? 'Alamat e-mel' : 'Nombor telefon'}
           </Text>
 
-          {method === 'phone' ? <PhoneNumberInput value={phone} onChangeText={value => { setPhone(value); setError(''); }} editable={!loading} /> : <TextInput
+          {method === 'phone' ? <PhoneNumberInput error={fieldErrors.phone} value={phone} onChangeText={value => { setPhone(value); setError(''); setFieldErrors({}); }} editable={!loading} /> : <FormInput validate={emailError} error={fieldErrors.email}
             style={[
               styles.input,
               {
-                borderColor: error ? theme.error : theme.border,
+                borderColor: emailFocused ? theme.primary : theme.border,
                 color: theme.text,
-                backgroundColor: theme.background,
+                backgroundColor: emailFocused ? theme.communityBg : theme.accent,
               },
             ]}
             placeholder="email@contoh.com"
             placeholderTextColor={theme.secondary}
             value={email}
-            onChangeText={(t: string) => { setEmail(t); setError(''); }}
+            onChangeText={(t: string) => { setEmail(t); setError(''); setFieldErrors({}); }}
+            accessibilityLabel="Alamat e-mel"
+            editable={!loading}
+            onFocus={() => setEmailFocused(true)}
+            onBlur={() => setEmailFocused(false)}
+            autoComplete="email"
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="email-address"
           />}
 
-          {error ? (
-            <Text style={[styles.errorText, { color: theme.error }]}>
-              {error}
-            </Text>
-          ) : null}
+          <FormError message={error}/>
 
           <View style={styles.buttonWrapper}>
-            <AuthButton
+            <AuthButton variant="solid"
               title={
                 method === 'phone' ? 'Hantar OTP' : sendDisabled
-                  ? `Kirim pautan untuk perubahan kata laluan (${sendCountdown}s)`
-                  : 'Kirim pautan untuk perubahan kata laluan'
+                  ? `Hantar pautan tetapan semula (${sendCountdown}s)`
+                  : 'Hantar pautan tetapan semula'
               }
               onPress={handleSend}
               loading={loading}
@@ -241,7 +256,7 @@ export default function ForgotPasswordScreen() {
           </View>
         </View>
 
-        <TouchableOpacity
+        <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-lg px-0 py-2"
           style={styles.link}
           onPress={() => router.replace('/(auth)/login')}
         >
@@ -249,7 +264,7 @@ export default function ForgotPasswordScreen() {
           <Text style={[styles.linkText, { color: theme.primary }]}>
             Kembali ke log masuk
           </Text>
-        </TouchableOpacity>
+        </Button>
       </View>
     </KeyboardForm>
   );
@@ -257,13 +272,14 @@ export default function ForgotPasswordScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  back: { padding: 16 },
+  page: { flexGrow: 1, width: "100%", maxWidth: Design.contentWidth, alignSelf: "center" },
+  back: { width: 44, height: 44, marginLeft: 12, marginTop: 8, marginBottom: 12 },
 
   // ── Form screen ──
   inner: {
     flexGrow: 1,
     flexShrink: 0,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingTop: 8,
     alignItems: 'center',
   },
@@ -276,8 +292,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 28,
+    lineHeight: 36,
+    letterSpacing: -0.6,
+    fontWeight: '800',
     marginBottom: 10,
     textAlign: 'center',
   },
@@ -291,7 +309,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: '600',
     marginBottom: 8,
     marginLeft: 2,
@@ -300,8 +319,8 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 52,
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 16,
+    borderRadius: 12,
+    paddingHorizontal: 14,
     fontSize: 15,
   },
   errorText: {
@@ -310,16 +329,16 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   buttonWrapper: {
-    marginTop: 24,
+    marginTop: 4,
     marginBottom: 8,
-    paddingHorizontal: 4,
   },
 
   // ── Success screen ──
   successPage: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingBottom: 0,
+    gap: 24,
     justifyContent: 'space-between',
   },
   successTop: {
@@ -327,6 +346,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 14,
+    paddingVertical: 32,
   },
   successIconCircle: {
     width: 100,
@@ -337,8 +357,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   successTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 28,
+    lineHeight: 36,
+    letterSpacing: -0.6,
+    fontWeight: '800',
     textAlign: 'center',
   },
   successSubtitle: {
@@ -364,11 +386,13 @@ const styles = StyleSheet.create({
   },
   resendWrapper: {
     width: '100%',
-    paddingHorizontal: 4,
   },
 
   // ── Shared ──
   link: {
+    minHeight: 44,
+    alignSelf: 'center',
+    justifyContent: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,

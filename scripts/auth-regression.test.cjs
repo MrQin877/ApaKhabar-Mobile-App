@@ -16,6 +16,8 @@ function load(relative, dependencies) {
   vm.runInNewContext(code, {
     exports, process: { env: {} }, console: { log() {}, warn() {}, error() {} },
     require(name) {
+      if (name === '../utils/authNavigation') return load('utils/authNavigation.ts', {});
+      if (name === './sessionEvents') return { sessionChanged() {} };
       if (!(name in dependencies)) throw Error('Unexpected dependency: ' + name);
       return dependencies[name];
     },

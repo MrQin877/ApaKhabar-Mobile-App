@@ -1,3 +1,4 @@
+import { sessionChanged } from "./sessionEvents";
 import axios from "axios";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -21,6 +22,7 @@ const clearStoredAuth = async () => {
     await SecureStore.deleteItemAsync("auth_token");
     await SecureStore.deleteItemAsync("user");
   }
+  sessionChanged();
 };
 
 const getStoredToken = async () => {

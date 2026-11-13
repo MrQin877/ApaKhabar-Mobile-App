@@ -5,10 +5,10 @@ const ts = require('typescript');
 function load(file, mocks) {
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
-  vm.runInNewContext(code, { exports, Date, console: { log() {}, warn() {} }, require: name => { assert.ok(name in mocks, name); return mocks[name]; } });
+  vm.runInNewContext(code, { exports, Date, console: { log() {}, warn() {} }, require: name => { if (name === '../utils/formValidation') return load('utils/formValidation.ts', {}); if (name === '../utils/authNavigation') return load('utils/authNavigation.ts', {}); if (name === './sessionEvents') return { sessionChanged() {} }; assert.ok(name in mocks, name); return mocks[name]; } });
   return exports;
 }
-function setup() {
+function setup(returnTo, platform = 'android') {
   let cursor = 0, args, resolve, reject, calls = 0, route;
   const slots = [];
   const react = {
@@ -16,11 +16,11 @@ function setup() {
     useRef(initial) { const index = cursor++; return slots[index] ||= { current: initial }; },
   };
   const module = load('hooks/useRegistration.ts', {
-    react, 'react-native': { Platform: { OS: 'android' } }, 'expo-router': { router: { replace: value => { route = value; } } },
+    react, 'react-native': { Platform: { OS: platform } }, 'expo-router': { router: { replace: value => { route = value; }, dismissTo: value => { route = value; } } },
     '@/constants/authData': { VALIDATION_RULES: { email: { pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ }, password: { minLength: 8, message: 'Minimum 8' } } },
     '@/services/authService': { register: (...values) => { calls++; args = values; return new Promise((a, b) => { resolve = a; reject = b; }); } },
   });
-  return { ...module, render: () => { cursor = 0; return module.useRegistration(); }, args: () => args, calls: () => calls, route: () => route, resolve: value => resolve(value), reject: value => reject(value) };
+  return { ...module, render: () => { cursor = 0; return module.useRegistration(returnTo); }, args: () => args, calls: () => calls, route: () => route, resolve: value => resolve(value), reject: value => reject(value) };
 }
 function personal(s) {
   const form = s.render();
@@ -54,6 +54,15 @@ async function main() {
   for (const [key, value] of Object.entries({ email: 'test@example.test', password: 'Password1', password_confirmation: 'Password1' })) demographicError.render().update(key, value);
   const failed = demographicError.render().submit(); demographicError.reject({ response: { status: 422, data: { errors: { citizenship: ['Invalid citizenship'] } } } }); await failed;
   assert.equal(demographicError.render().step, 1); assert.equal(demographicError.render().fields.email, 'test@example.test');
+  for (const destination of ['/(tabs)/profile', '/(tabs)/notification']) {
+    for (const platform of ['android', 'web']) {
+      const directed = setup(destination, platform); personal(directed); directed.render().next();
+      for (const [key, value] of Object.entries({ email: 'reader@example.test', password: 'Password1', password_confirmation: 'Password1' })) directed.render().update(key, value);
+      const task = directed.render().submit(); directed.resolve({ user: {} }); await task;
+      if (platform === 'android') { assert.equal(directed.route().pathname, '/verify-email'); assert.equal(directed.route().params.returnTo, destination); }
+      else assert.equal(directed.route(), destination);
+    }
+  }
   const stored = {}, payloads = [];
   const auth = load('services/authService.ts', {
     'expo-secure-store': { setItemAsync: async (key, value) => { stored[key] = value; } },

@@ -1,0 +1,98 @@
+--- a/routes/api.php
++++ b/routes/api.php
+@@ -34,8 +34,8 @@
+ Route::get('/news', [NewsController::class, 'index'])->middleware(OptionalNewsAuth::class);
+ Route::get('/news/{id}', [NewsController::class, 'show'])->middleware(OptionalNewsAuth::class);
+ Route::get('/news/{id}/related', [NewsController::class, 'related'])->middleware(OptionalNewsAuth::class);
+-Route::get('/shorts', [\App\Http\Controllers\Home\VideoPageController::class, 'index']);
+-Route::get('/shorts/{id}', [\App\Http\Controllers\Home\ShortViewerController::class, 'show'])->whereNumber('id');
++Route::middleware(OptionalNewsAuth::class)->get('/shorts', [\App\Http\Controllers\Home\MobileShortController::class, 'index']);
++Route::middleware(OptionalNewsAuth::class)->get('/shorts/{id}', [\App\Http\Controllers\Home\MobileShortController::class, 'show'])->whereNumber('id');
+ Route::get('/categories', [NewsCategoryController::class, 'active']);
+ Route::get('/broadcasts/darurat', [EmergencyBroadcastController::class, 'darurat']);
+ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+@@ -86,3 +86,9 @@
+ });
+ Route::get('/shorts/{id}/comments', [\App\Http\Controllers\Home\ShortEngagementController::class, 'index'])->whereNumber('id');
+ Route::get('/shorts/{id}/comments/{comment}/replies', [\App\Http\Controllers\Home\ShortEngagementController::class, 'replies'])->whereNumber(['id', 'comment']);
++
++Route::post('/shorts/{id}/like', [\App\Http\Controllers\Home\ShortEngagementController::class, 'likeVideo'])->whereNumber('id')->middleware([ApiAuth::class, 'throttle:30,1']);
++Route::middleware([MobileCommentAccess::class, 'throttle:30,1'])->group(function () {
++    Route::get('/shorts/{id}/view-token', [\App\Http\Controllers\Home\MobileShortController::class, 'token'])->whereNumber('id');
++    Route::post('/shorts/{id}/view', [\App\Http\Controllers\Home\MobileShortController::class, 'view'])->whereNumber('id');
++});
+--- /dev/null
++++ b/app/Http/Controllers/Home/MobileShortController.php
+@@ -0,0 +1,72 @@
++<?php
++
++namespace App\Http\Controllers\Home;
++
++use App\Http\Controllers\Controller;
++use App\Models\ShortVideo;
++use Illuminate\Http\Request;
++use Illuminate\Support\Facades\Crypt;
++use Illuminate\Support\Facades\DB;
++
++// Mobile routes use bearer/opaque guest credentials, never website session cookies.
++class MobileShortController extends Controller
++{
++    public function index(Request $request)
++    {
++        if (! $request->boolean('mobile')) {
++            return app(VideoPageController::class)->index($request);
++        }
++        $videos = ShortVideo::where('status', 'published')->whereNotNull('published_at')
++            ->withPublicEngagement()->latest('published_at')->latest('id')->paginate(12);
++        $videos->through(fn ($video) => $this->present($video, $request));
++        return response()->json(['mobile_feed' => true, 'shorts' => $videos]);
++    }
++
++    public function show(Request $request, int $id)
++    {
++        $video = ShortVideo::where('status', 'published')->whereNotNull('published_at')->withPublicEngagement()->findOrFail($id);
++        return response()->json(['data' => $this->present($video, $request)]);
++    }
++
++    private function present(ShortVideo $video, Request $request): array
++    {
++        return array_merge($video->only(['id', 'title', 'description', 'thumbnail_url', 'video_url', 'published_at', 'view_count', 'likes_count', 'comments_count']), [
++            'liked_by_user' => $request->user() ? DB::table('short_video_likes')->where('short_video_id', $video->id)->where('user_id', $request->user()->getKey())->exists() : false,
++        ]);
++    }
++
++    private function viewer(Request $request): string
++    {
++        if ($request->user()) return 'user:'.$request->user()->getKey();
++        $identity = $request->attributes->get('mobile_guest_identity');
++        abort_unless($identity, 401);
++        return 'mobile-guest:'.$identity->id;
++    }
++
++    public function token(Request $request, int $id)
++    {
++        ShortVideo::where('status', 'published')->whereNotNull('published_at')->findOrFail($id);
++        return response()->json(['token' => Crypt::encryptString(json_encode([
++            'short' => $id, 'viewer' => $this->viewer($request), 'time' => now()->timestamp,
++        ]))])->header('Cache-Control', 'no-store');
++    }
++
++    public function view(Request $request, int $id)
++    {
++        $data = $request->validate(['token' => 'required|string|max:2000']);
++        $viewer = $this->viewer($request);
++        try {
++            $claim = json_decode(Crypt::decryptString($data['token']), true, 512, JSON_THROW_ON_ERROR);
++            $age = now()->timestamp - $claim['time'];
++            $valid = (int) $claim['short'] === $id && $age >= 5 && $age <= 7200 && hash_equals($viewer, $claim['viewer']);
++        } catch (\Throwable) { $valid = false; }
++        abort_unless($valid, 422);
++        $count = DB::transaction(function () use ($id, $viewer) {
++            $video = ShortVideo::where('status', 'published')->whereNotNull('published_at')->lockForUpdate()->findOrFail($id);
++            $inserted = DB::table('short_video_viewers')->insertOrIgnore(['short_video_id' => $id, 'viewer_key' => $viewer, 'viewed_at' => now()]);
++            if ($inserted) $video->increment('view_count');
++            return (int) $video->view_count;
++        });
++        return response()->json(['view_count' => $count]);
++    }
++}

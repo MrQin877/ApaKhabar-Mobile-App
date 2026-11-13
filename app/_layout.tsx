@@ -7,12 +7,12 @@ import {
 } from "@/context/NotificationContext";
 import { AppearanceProvider } from "@/context/AppearanceContext";
 import { registerPushToken } from "@/services/pushToken";
+import { getToken } from "@/services/authService";
 import { PortalHost } from "heroui-native/portal";
 import { HeroUINativeProviderRaw } from "heroui-native/provider-raw";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
-import { router, Slot } from "expo-router";
+import { Slot } from "expo-router";
 import { useEffect } from "react";
 import { View } from "react-native";
 
@@ -24,42 +24,15 @@ function RootContent() {
     registerPushToken();
   }, []);
 
-  // Handle deep links
-  useEffect(() => {
-    const handleDeepLink = (url: string) => {
-      const parsed = Linking.parse(url);
-      if (parsed.path === "reset-password") {
-        const token = parsed.queryParams?.token as string;
-        const email = parsed.queryParams?.email as string;
-        if (token && email) {
-          router.push({
-            pathname: "/(auth)/reset-password",
-            params: { token, email },
-          });
-        }
-      }
-    };
-
-    // App already open — listen for incoming links
-    const subscription = Linking.addEventListener("url", ({ url }) => {
-      handleDeepLink(url);
-    });
-
-    // App opened from closed state via link
-    Linking.getInitialURL().then((url) => {
-      if (url) handleDeepLink(url);
-    });
-
-    return () => subscription.remove();
-  }, []);
-
   // Listen for push notifications while app is open
   useEffect(() => {
     const subscription = Notifications.addNotificationReceivedListener(
       (notification) => {
         const { title, body, data } = notification.request.content;
         if (data?.type === "darurat") {
-          showToast(title ?? body ?? "Notifikasi darurat");
+          void getToken().then(token => {
+            if (token) showToast(title ?? body ?? "Notifikasi darurat");
+          }).catch(() => {});
         }
       },
     );
