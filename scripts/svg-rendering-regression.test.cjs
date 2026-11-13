@@ -36,23 +36,42 @@ assert.equal(all.filter(n => n.type === 'Filter').length, 2);
 assert.equal(all.filter(n => n.type === 'FeColorMatrix').length, 2);
 assert.equal(all.filter(n => n.type === 'Mask').length, 1);
 assert.equal(all.filter(n => n.type === 'Image').length, 2);
-for (const scheme of ['light', 'dark']) for (const [width, height] of [[320, 568], [390, 844], [844, 390]]) {
+const webp = fs.readFileSync('assets/images/khabby.webp');
+assert.equal(webp.toString('ascii', 0, 4), 'RIFF');
+assert.equal(webp.toString('ascii', 8, 12), 'WEBP');
+for (const scheme of ['light', 'dark']) for (const [width, height] of [[320, 568], [390, 844], [844, 390], [1024, 1366]]) {
+  const insets = { top: 24, bottom: 12, left: width > height ? 44 : 0, right: width > height ? 44 : 0 };
+  const animation = { fadeTop: {}, translateY: {}, fadeButtons: {}, translateB: {} };
   const Welcome = load('app/(auth)/welcome.tsx', {
     react: require('react'), 'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { Image: 'Image', ScrollView: 'Scroll', StatusBar: 'StatusBar', View: 'View', useWindowDimensions: () => ({ width, height }) },
-    'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 24, bottom: 12 }) },
+    'react-native': { ScrollView: 'Scroll', StatusBar: 'StatusBar', View: 'View', useWindowDimensions: () => ({ width, height }) },
+    'expo-image': { Image: 'Image' },
+    'react-native-safe-area-context': { useSafeAreaInsets: () => insets },
     '../../components/auth/WelcomeActions': { WelcomeActions: 'Actions' }, '../../components/auth/WelcomeHeader': { WelcomeHeader: 'Header' },
     '../../constants/theme': { getTheme: () => ({ background: scheme === 'dark' ? '#151718' : '#ffffff' }) },
-    '../../hooks/use-color-scheme': { useColorScheme: () => scheme }, '../../hooks/useWelcomeAnimations': { useWelcomeAnimations: () => ({}) },
-    '../../styles/welcome': { welcomeStyles: {} }, '../../assets/images/apakhabar-mascot.png': 1,
+    '../../hooks/use-color-scheme': { useColorScheme: () => scheme }, '../../hooks/useWelcomeAnimations': { useWelcomeAnimations: () => animation },
+    '../../styles/welcome': { welcomeStyles: {} }, '../../assets/images/khabby.webp': 1,
   }).default;
   const tree = Welcome(), image = nodes(tree).find(n => n.type === 'Image');
-  assert.equal(image.props.source, 1); assert.equal(image.props.resizeMode, 'contain');
+  assert.equal(image.props.source, 1); assert.equal(image.props.contentFit, 'contain');
   assert.ok(image.props.style.width >= 200 && image.props.style.width <= width - 40);
   assert.equal(image.props.style.width, image.props.style.height);
   assert.equal(image.props.style.tintColor, undefined, 'Keep original artwork colors in both themes');
-  const container = nodes(tree).find(n => n.props?.pointerEvents === 'none');
-  assert.equal(container.props.children.length, 2, 'Keep both diagonal stripes behind the content');
-  assert.ok(nodes(tree).some(n => n.type === 'Actions')); assert.ok(nodes(tree).some(n => n.type === 'Header'));
+  const rendered = nodes(tree);
+  for (const type of ['Scroll', 'Image', 'Actions', 'Header']) assert.equal(rendered.filter(n => n.type === type).length, 1, `No duplicate ${type}`);
+  assert.equal(rendered.some(n => n.props?.pointerEvents === 'none'), false, 'No decorative stripe layer');
+  const scroll = rendered.find(n => n.type === 'Scroll');
+  assert.equal(scroll.props.contentContainerStyle.paddingTop, insets.top);
+  assert.equal(scroll.props.contentContainerStyle.paddingBottom, insets.bottom);
+  assert.equal(scroll.props.contentContainerStyle.paddingLeft, insets.left);
+  assert.equal(scroll.props.contentContainerStyle.paddingRight, insets.right);
+  assert.equal(scroll.props.contentContainerStyle.alignItems, 'center');
+  assert.equal(scroll.props.contentInsetAdjustmentBehavior, 'never');
+  const header = rendered.find(n => n.type === 'Header'), actions = rendered.find(n => n.type === 'Actions');
+  assert.equal(header.props.width, Math.min(width - insets.left - insets.right, 540));
+  assert.ok(image.props.style.width <= header.props.width - header.props.sidePad * 2);
+  assert.equal(header.props.fadeTop, animation.fadeTop); assert.equal(header.props.translateY, animation.translateY);
+  assert.equal(actions.props.fadeButtons, animation.fadeButtons); assert.equal(actions.props.translateB, animation.translateB);
+  assert.equal(rendered.find(n => n.type === 'StatusBar').props.barStyle, scheme === 'dark' ? 'light-content' : 'dark-content');
 }
-console.log('Passed: original asset provenance, RGBA fallback dimensions, actual SVG structure, light/dark responsive sizing, contain mode, unchanged colors, stripes/header/actions.');
+console.log('Passed: original asset provenance, SVG structure, bundled Khabby WebP via expo-image, light/dark responsive sizing, safe areas, single scroll/header/mascot/actions, no stripes and preserved animations.');
