@@ -9,8 +9,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { PressableFeedback } from 'heroui-native/pressable-feedback';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { CommentsSheet } from '@/components/news/CommentsSheet';
-import { getToken } from '@/services/authService';
-import { countShortView, getShort, getShorts, shortsCommentAdapter, toggleShortLike, type ShortVideo } from '@/services/shortsService';
+import { useNewsLike } from '@/hooks/useNewsLike';
+import { newsLikesVersion, observeNewsLikes } from '@/services/newsLikes';
+import { countShortView, getShort, getShorts, shortsCommentAdapter, type ShortVideo } from '@/services/shortsService';
 import { newsImage } from '@/components/news/FeaturedCard';
 import type { NewsCommentsSnapshot } from '@/utils/newsComments';
 import { subscribeSession } from '@/services/sessionEvents';
@@ -32,8 +33,7 @@ function VideoCard({ item, height, active, ready, update }: { item: ShortVideo; 
   const [paused, setPaused] = useState(false);
   const [flash, setFlash] = useState<'play' | 'pause' | null>(null);
   const [comments, setComments] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const liking = useRef(false);
+  const likeState = useNewsLike({ ...detail, kind: 'short' });
   const [notice, setNotice] = useState('');
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const watched = useRef(0);
@@ -42,7 +42,8 @@ function VideoCard({ item, height, active, ready, update }: { item: ShortVideo; 
   const player = useVideoPlayer(null, p => { p.loop = true; p.timeUpdateEventInterval = 1; });
   const load = useCallback(() => {
     setFailed(false); setLoading(true);
-    return getShort(item.id).then(async video => { if (!alive.current) return; setDetail(video); await player.replaceAsync(video.video_url ? { uri: newsImage(video.video_url) } : null); if (!video.video_url && alive.current) setFailed(true); }).catch(() => { if (alive.current) setFailed(true); }).finally(() => { if (alive.current) setLoading(false); });
+    const version = newsLikesVersion();
+    return getShort(item.id).then(async video => { if (!alive.current) return; observeNewsLikes([{ ...video, kind: 'short' }], version); setDetail(video); await player.replaceAsync(video.video_url ? { uri: newsImage(video.video_url) } : null); if (!video.video_url && alive.current) setFailed(true); }).catch(() => { if (alive.current) setFailed(true); }).finally(() => { if (alive.current) setLoading(false); });
   }, [item.id, player]);
   useEffect(() => { alive.current = true; void Promise.resolve().then(() => { if (alive.current) void load(); }); return () => { alive.current = false; }; }, [load]);
   useEffect(() => {
@@ -65,18 +66,12 @@ function VideoCard({ item, height, active, ready, update }: { item: ShortVideo; 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
   const onChange = useCallback((snapshot: NewsCommentsSnapshot) => setDetail(previous => ({ ...previous, comments_count: snapshot.total })), []);
   const like = async () => {
-    if (liking.current) return;
-    liking.current = true;
-    const previous = detail;
-    setBusy(true); setNotice('');
+    setNotice('');
+    if (!ready) { setNotice('Suka video memerlukan kemas kini API Shorts.'); return; }
     try {
-      if (!await getToken()) { router.push({ pathname: '/(auth)/login', params: { returnTo: `/(tabs)/video?id=${item.id}` } }); return; }
-      if (!ready) { setNotice('Suka video memerlukan kemas kini API Shorts.'); return; }
-      setDetail({ ...detail, liked_by_user: !detail.liked_by_user, likes_count: Math.max(0, detail.likes_count + (detail.liked_by_user ? -1 : 1)) });
-      const result = await toggleShortLike(item.id); setDetail({ ...previous, liked_by_user: result.liked, likes_count: result.likes_count });
-    }
-    catch { setDetail(previous); setNotice('Suka tidak dapat dikemas kini. Cuba lagi.'); }
-    finally { liking.current = false; setBusy(false); }
+      const result = await likeState.toggle();
+      if (result === null) router.push({ pathname: '/(auth)/login', params: { returnTo: `/(tabs)/video?id=${item.id}` } });
+    } catch { setNotice('Suka tidak dapat dikemas kini. Cuba lagi.'); }
   };
   const share = async () => {
     try {
@@ -95,7 +90,7 @@ function VideoCard({ item, height, active, ready, update }: { item: ShortVideo; 
     <LinearGradient pointerEvents="none" colors={['transparent', '#000d']} style={styles.gradient}/>
     <View style={[styles.caption, { bottom: navigationSpace + 16 }]} pointerEvents="box-none"><Text style={[styles.white, { fontWeight: '600' }]}>ApaKhabar{detail.published_at ? ` · ${publicationTime(detail.published_at)}` : ''}</Text><Text numberOfLines={2} style={[styles.white, { fontSize: 19, fontWeight: '700', marginTop: 8 }]}>{detail.title}</Text><Text numberOfLines={3} style={[styles.white, { lineHeight: 20, marginTop: 6 }]}>{detail.description}</Text>{!!notice && <Text accessibilityLiveRegion="polite" style={[styles.white, { marginTop: 8 }]}>{notice}</Text>}</View>
     <View style={[styles.actions, { bottom: navigationSpace + 132 }]}>
-      <PressableFeedback accessibilityRole="button" accessibilityLabel="Suka video" accessibilityState={{ selected: !!detail.liked_by_user, disabled: busy }} isDisabled={busy} onPress={() => void like()} style={styles.action}><Ionicons name={detail.liked_by_user ? 'heart' : 'heart-outline'} size={32} color={detail.liked_by_user ? '#ef4444' : 'white'}/><Text style={styles.white}>{detail.likes_count || 0}</Text></PressableFeedback>
+      <PressableFeedback accessibilityRole="button" accessibilityLabel="Suka video" accessibilityState={{ selected: likeState.liked, busy: likeState.pending }} hitSlop={8} onPress={() => void like()} style={styles.action}><Ionicons name={likeState.liked ? 'heart' : 'heart-outline'} size={32} color={likeState.liked ? '#ef4444' : 'white'}/><Text style={styles.white}>{likeState.count}</Text></PressableFeedback>
       <PressableFeedback accessibilityRole="button" accessibilityLabel="Buka komen" onPress={() => setComments(true)} style={styles.action}><Ionicons name="chatbubble-outline" size={30} color="white"/><Text style={styles.white}>{detail.comments_count || 0}</Text></PressableFeedback>
       <PressableFeedback accessibilityRole="button" accessibilityLabel="Kongsi video" onPress={() => void share()} style={styles.action}><Ionicons name="share-social-outline" size={30} color="white"/><Text style={styles.white}>Kongsi</Text></PressableFeedback>
     </View>

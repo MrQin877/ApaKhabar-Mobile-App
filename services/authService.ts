@@ -103,6 +103,10 @@ export const register = async (
 
   if (email && email.trim()) {
     payload.email = email.trim();
+    if (Platform.OS !== 'web') {
+      const { createURL } = await import('expo-linking');
+      payload.return_url = createURL('verify-email', { isTripleSlashed: true });
+    }
   }
 
   if (phone && phone.trim()) {

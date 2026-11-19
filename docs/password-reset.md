@@ -28,6 +28,20 @@ Build Repo C with `EXPO_PUBLIC_API_BASE_URL=https://YOUR_BACKEND.azurewebsites.n
 Configure Laravel's `APP_URL` with that backend's HTTPS origin and keep `MOBILE_PASSWORD_RESET_RETURN_URL=apakhabarmobileapp:///reset-password`.
 The installed app must register the existing `apakhabarmobileapp` scheme. Expo Go uses a development session URL instead; it is not a production callback.
 
+For Expo Go testing against Azure, explicitly allow the complete current callback
+in the backend environment:
+
+```env
+MOBILE_PASSWORD_RESET_EXPO_RETURN_URLS=exp://192.168.68.59:8081/--/reset-password
+```
+
+Multiple approved callbacks can be comma-separated. Scheme, host, port and path
+must match exactly. Recreate the application containers and rebuild configuration
+cache after changing this server setting. Keep the phone on a network that can
+reach Metro. If the laptop IP or Metro port changes, update the allowlist and
+request a new reset email. The API remains `https://apakhabar.me/api`; the
+installed-app callback remains `apakhabarmobileapp:///reset-password`.
+
 Incoming email links never override the app's API URL. Website reset requests continue using Laravel's normal website reset form.
 
 ## Physical-phone check

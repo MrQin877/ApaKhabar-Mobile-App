@@ -81,7 +81,7 @@ export default function VerifyEmailScreen() {
       <FormError message={sendError || error}/>
       <View style={{ width: '100%' }}>
         {unverified && <AuthButton variant="solid" title="Kirim ulang email konfirmasi" onPress={resend} loading={sending} disabled={loading || !confirmed || !user?.email} />}
-        <AuthButton variant="solid" title="I have verified my email" onPress={check} loading={loading} disabled={sending} />
+        <AuthButton variant="solid" title="Saya sudah memverifikasi email" onPress={check} loading={loading} disabled={sending} />
         {registrationPending === false && <AuthButton variant="solid" title="Kembali ke Profil" onPress={() => router.replace('/(tabs)/profile')} disabled={sending} />}
       </View>
     </ScrollView>

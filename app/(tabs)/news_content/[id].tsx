@@ -54,7 +54,6 @@ function NewsArticle({ id, initialCommentsOpen }: { id: string; initialCommentsO
   const [actionError, setActionError] = useState("");
   const [relatedError, setRelatedError] = useState(false);
   const likeState = useNewsLike(news ?? { id, likes: 0 });
-  const liking = likeState.pending;
   const [showComments, setShowComments] = useState(initialCommentsOpen);
   useFocusEffect(useCallback(() => { if (initialCommentsOpen) setShowComments(true); }, [initialCommentsOpen]));
   const closeComments = useCallback(() => setShowComments(false), []);
@@ -83,7 +82,7 @@ function NewsArticle({ id, initialCommentsOpen }: { id: string; initialCommentsO
     catch { setActionError("Berita tidak dapat dikongsi. Cuba lagi."); }
   };
   const like = async () => {
-    if (liking || !ready) return;
+    if (!ready) return;
     setActionError("");
     try {
       const result = await likeState.toggle();
@@ -112,7 +111,7 @@ function NewsArticle({ id, initialCommentsOpen }: { id: string; initialCommentsO
         {!!news.caption && <Text style={{ color: theme.secondary, fontSize: 11, lineHeight: 16, marginTop: 8 }}>{news.caption}</Text>}
         <View style={{ marginTop: 20 }}><ArticleBody content={body} theme={theme}/></View>
         <View style={[styles.engagement, { borderColor: theme.border }]}>
-          <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel="Suka berita" accessibilityState={{ disabled: liking, selected: likeState.liked }} isDisabled={liking} onPress={like} style={styles.action}><Ionicons name={likeState.liked ? "heart" : "heart-outline"} size={19} color={likeState.liked ? theme.primary : theme.secondary}/><Text style={{ color: theme.text, fontSize: 12 }}>Suka {likeState.count}</Text></Button>
+          <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel="Suka berita" accessibilityState={{ busy: likeState.pending, selected: likeState.liked }} hitSlop={8} onPress={like} style={styles.action}><Ionicons name={likeState.liked ? "heart" : "heart-outline"} size={19} color={likeState.liked ? theme.primary : theme.secondary}/><Text style={{ color: theme.text, fontSize: 12 }}>Suka {likeState.count}</Text></Button>
           <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel="Buka komen" onPress={() => setShowComments(true)} style={styles.action}><Ionicons name="chatbubble-outline" size={18} color={theme.secondary}/><Text style={{ color: theme.text, fontSize: 12 }}>{commentCount(news)} komen</Text></Button>
           <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel="Kongsi berita" onPress={share} style={styles.action}><Ionicons name="share-outline" size={19} color={theme.secondary}/><Text style={{ color: theme.text, fontSize: 12 }}>Kongsi</Text></Button>
         </View>

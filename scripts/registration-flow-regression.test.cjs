@@ -65,6 +65,7 @@ async function main() {
   }
   const stored = {}, payloads = [];
   const auth = load('services/authService.ts', {
+    'expo-linking': { createURL: () => 'exp://192.168.1.2:8081/--/verify-email' },
     'expo-secure-store': { setItemAsync: async (key, value) => { stored[key] = value; } },
     'react-native': { Platform: { OS: 'android' } }, './pushToken': { registerPushToken: async () => {} },
     './api': { post: async (path, payload) => { assert.equal(path, '/register'); payloads.push(payload); return { data: { token: 'test-session', user: { email: payload.email, phone: payload.phone } } }; } },
@@ -72,6 +73,7 @@ async function main() {
   await auth.register('Test', 'new@example.test', 'Password1', 'Password1', undefined, { date_of_birth: '2000-10-01', citizenship: 'dual', gender: 'female' });
   assert.equal(payloads[0].date_of_birth, '2000-10-01'); assert.equal(payloads[0].citizenship, 'dual'); assert.equal(payloads[0].gender, 'female');
   assert.equal(payloads[0].password_confirmation, 'Password1'); assert.ok(!('ethnicity' in payloads[0])); assert.ok(!('phone' in payloads[0]));
+  assert.equal(payloads[0].return_url, 'exp://192.168.1.2:8081/--/verify-email');
   assert.equal(stored.auth_token, 'test-session'); assert.equal(stored.pending_email_registration, 'new@example.test');
   assert.equal(JSON.parse(stored.user).email, 'new@example.test');
   const phones = load('utils/phoneNumber.ts', {});

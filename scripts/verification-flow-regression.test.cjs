@@ -109,7 +109,7 @@ async function main() {
   // Existing email-link screen: no OTP, resend endpoint, duplicate lock, status refresh and original routing.
   const emailHooks = hooks(), emailTask = deferred(); let resendCalls = 0, refreshCalls = 0, emailRoute;
   const profile = { user: { email: 'reader@example.test', email_verified_at: null }, confirmed: true, loading: false, error: '', refresh: async () => { refreshCalls++; return profile.user; } };
-  const emailService = load('services/emailVerification.ts', { axios: { isAxiosError: e => !!e.response }, './api': { post: async (url, payload) => { assert.equal(url, '/email/verification-notification'); assert.equal(Object.keys(payload).length, 0); resendCalls++; return { data: await emailTask.promise }; } } });
+  const emailService = load('services/emailVerification.ts', { 'react-native': native, 'expo-linking': { createURL: () => 'exp://192.168.1.2:8081/--/verify-email' }, axios: { isAxiosError: e => !!e.response }, './api': { post: async (url, payload) => { assert.equal(url, '/email/verification-notification'); assert.equal(payload.return_url, 'exp://192.168.1.2:8081/--/verify-email'); resendCalls++; return { data: await emailTask.promise }; } } });
   const Email = load('app/verify-email.tsx', { ...shared, react: emailHooks.react,
     '../utils/authNavigation': { authDestination: value => value || '/(tabs)/news_content' }, '../components/profile/ApprovedBadge': { ApprovedBadge: 'Approved' },
     '../hooks/useVerifiedProfile': { useVerifiedProfile: () => profile }, '../services/emailVerification': emailService,
@@ -118,9 +118,9 @@ async function main() {
   }).default;
   const renderEmail = () => emailHooks.render(Email); page = renderEmail(); await flush(); page = renderEmail();
   assert.ok(!get(page, 'OTP')); assert.equal(button(page, 'Kirim ulang email konfirmasi').props.variant, 'solid');
-  button(page, 'Kirim ulang email konfirmasi').props.onPress(); button(page, 'Kirim ulang email konfirmasi').props.onPress(); assert.equal(resendCalls, 1);
+  button(page, 'Kirim ulang email konfirmasi').props.onPress(); button(page, 'Kirim ulang email konfirmasi').props.onPress(); await flush(); assert.equal(resendCalls, 1);
   emailTask.resolve({ status: 'verification-link-sent', email: profile.user.email }); await flush(); assert.equal(refreshCalls, 1); assert.equal(emailRoute, undefined);
-  button(renderEmail(), 'I have verified my email').props.onPress(); await flush(); assert.equal(emailRoute, undefined);
+  button(renderEmail(), 'Saya sudah memverifikasi email').props.onPress(); await flush(); assert.equal(emailRoute, undefined);
   profile.user = { ...profile.user, email_verified_at: 'confirmed-by-laravel' }; renderEmail(); await flush(); assert.equal(emailRoute, '/(tabs)/profile');
   console.log('Passed: phone masking, six digits, OTP submit/duplicate lock, incorrect/expired/unconfirmed responses, success/News action, resend/countdown/429/daily limits, phone change/reset contracts, email alternative, autofill/focus, and unchanged email-link resend/status/navigation.');
 }

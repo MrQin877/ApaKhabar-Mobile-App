@@ -1,5 +1,6 @@
 import { isAxiosError } from 'axios';
 import api from './api';
+import { Platform } from 'react-native';
 
 export type VerificationResponse = {
   status: 'verification-link-sent' | 'already-verified';
@@ -8,7 +9,9 @@ export type VerificationResponse = {
 
 export async function resendVerification(): Promise<VerificationResponse> {
   // The server chooses the authenticated user's saved email.
-  const response = await api.post('/email/verification-notification', {}, { timeout: 15000 });
+  const { createURL } = await import('expo-linking');
+  const return_url = Platform.OS === 'web' ? undefined : createURL('verify-email', { isTripleSlashed: true });
+  const response = await api.post('/email/verification-notification', { return_url }, { timeout: 15000 });
   return response.data;
 }
 

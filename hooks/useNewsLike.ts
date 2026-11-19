@@ -3,6 +3,6 @@ import { initialLikeState, likesRevision, newsLikeState, subscribeNewsLikes, tog
 
 export function useNewsLike(item: LikeSource) {
   useSyncExternalStore(subscribeNewsLikes, likesRevision, likesRevision);
-  const state = newsLikeState(item.id) ?? initialLikeState(item);
+  const state = newsLikeState(item.id, item.kind) ?? initialLikeState(item);
   return { ...state, toggle: () => toggleNewsLike(item) };
 }

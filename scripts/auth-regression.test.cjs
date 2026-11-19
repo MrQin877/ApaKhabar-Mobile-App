@@ -120,6 +120,7 @@ test('login and registration finish without waiting for push permissions', async
   const storage = new Map();
   let pushCalls = 0;
   const services = load('services/authService.ts', {
+    'expo-linking': { createURL: () => 'exp://192.168.1.2:8081/--/verify-email' },
     'expo-secure-store': { setItemAsync: async (key, value) => storage.set(key, value) },
     'react-native': { Platform: { OS: 'android' } },
     './api': { post: async () => ({ data: { token: 'session-token', user: { id: '1' } } }) },
