@@ -11,7 +11,7 @@ export function resolveNewsImage(image: string, backendOrigin = BACKEND_BASE_URL
     try {
       const url = new URL(value.startsWith("//") ? `https:${value}` : value);
       // Laravel's local APP_URL may still be localhost when the phone uses a LAN host.
-      if (localHost(url.hostname) && url.pathname.startsWith("/storage/")) return `${origin}${url.pathname}${url.search}${url.hash}`;
+      if (localHost(url.hostname) && (url.pathname.startsWith("/storage/") || url.pathname.startsWith("/short-media/"))) return `${origin}${url.pathname}${url.search}${url.hash}`;
       return url.href;
     } catch { return value; }
   }
