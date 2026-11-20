@@ -22,7 +22,7 @@ export const CommentRow = memo(function CommentRow({ comment, depth, theme, now,
       <View style={styles.actions}>
         <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel={`Balas kepada ${name}`} isDisabled={disabled} onPress={() => onReply(comment)} style={styles.action}><Text style={[styles.actionText, { color: theme.secondary }]}>Balas</Text></Button>
         {!!comment.likes_count && <View accessibilityLabel={`${comment.likes_count} suka`} style={styles.likeCount}><Ionicons name="heart-outline" size={14} color={theme.secondary}/><Text style={[styles.actionText, { color: theme.secondary }]}>{comment.likes_count}</Text></View>}
-        {canReport && (comment.reported_by_user ? <Text style={[styles.actionText, { color: theme.secondary }]}>Dilaporkan</Text> : <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel={`Laporkan komen ${name}`} isDisabled={disabled} onPress={() => onReport(comment)} style={[styles.action, { marginLeft: "auto" }]}><Ionicons name="ellipsis-horizontal" size={18} color={theme.secondary}/></Button>)}
+        {canReport && (comment.reported_by_user ? <Text style={[styles.actionText, { color: theme.secondary }]}>Dilaporkan</Text> : <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel={`Laporkan komen ${name}`} hitSlop={8} isDisabled={disabled} onPress={() => onReport(comment)} style={[styles.action, { marginLeft: "auto" }]}><Ionicons name="flag-outline" size={15} color={theme.secondary}/><Text style={[styles.actionText, { color: theme.secondary }]}>Laporkan</Text></Button>)}
       </View>
     </View>
   </View>;
@@ -32,6 +32,6 @@ const styles = StyleSheet.create({
   avatar: { width: 32, height: 32, borderRadius: 16 }, initials: { alignItems: "center", justifyContent: "center" },
   heading: { flexDirection: "row", alignItems: "baseline", gap: 8 }, name: { fontSize: 12, fontWeight: "700", lineHeight: 18, flex: 1 },
   time: { fontSize: 10, lineHeight: 16 }, content: { fontSize: 14, lineHeight: 20, marginTop: 3 },
-  actions: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 32 }, action: { minHeight: 32, minWidth: 32, justifyContent: "center" },
+  actions: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 44 }, action: { minHeight: 44, minWidth: 44, justifyContent: "center", flexDirection: "row", alignItems: "center", gap: 4 },
   actionText: { fontSize: 11 }, likeCount: { flexDirection: "row", gap: 4, alignItems: "center" },
 });

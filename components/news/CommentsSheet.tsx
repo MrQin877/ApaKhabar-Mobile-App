@@ -15,6 +15,7 @@ import { getToken, getUser } from "@/services/authService";
 import { subscribeSession } from "@/services/sessionEvents";
 import { getNewsDetail, postComment, postCommentReply, reportNewsComment } from "@/services/newsService";
 import { commentErrorMessage, commenterName, commentSubmissionMessage, isGuestQuotaError, readNewsComments, threadNewsComments, type NewsCommentsSnapshot, type PublicNewsComment } from "@/utils/newsComments";
+import { CommentReportForm } from "./CommentReportForm";
 import { CommentRow } from "./CommentRow";
 import { GuestCommentLimitDialog } from "./GuestCommentLimitDialog";
 
@@ -24,7 +25,7 @@ const CommentInput = forwardRef<TextInputInstance, ComponentProps<typeof Input>>
   return <Input {...props} ref={ref} onFocus={onFocus} onBlur={onBlur} className="h-auto border-0 shadow-none"/>;
 });
 
-type CommentAdapter = { load: (id: string) => Promise<NewsCommentsSnapshot>; more?: (id: string, page: number) => Promise<NewsCommentsSnapshot>; post: typeof postComment; reply: typeof postCommentReply };
+type CommentAdapter = { load: (id: string) => Promise<NewsCommentsSnapshot>; more?: (id: string, page: number) => Promise<NewsCommentsSnapshot>; post: typeof postComment; reply: typeof postCommentReply; report?: (commentId: string, reason: string, id: string, category?: string) => Promise<unknown> };
 type Props = { newsId: string; visible: boolean; initialSnapshot: NewsCommentsSnapshot; theme: Theme; onClose: () => void; onChange: (snapshot: NewsCommentsSnapshot) => void; adapter?: CommentAdapter };
 export function CommentsSheet({ newsId, visible, initialSnapshot, theme, onClose, onChange, adapter }: Props) {
   const router = useRouter();
@@ -39,6 +40,7 @@ export function CommentsSheet({ newsId, visible, initialSnapshot, theme, onClose
   const [replyTarget, setReplyTarget] = useState<PublicNewsComment | null>(null);
   const [reportTarget, setReportTarget] = useState<PublicNewsComment | null>(null);
   const [reportReason, setReportReason] = useState("");
+  const [reportCategory, setReportCategory] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [inputError, setInputError] = useState("");
@@ -70,9 +72,9 @@ export function CommentsSheet({ newsId, visible, initialSnapshot, theme, onClose
     return () => clearInterval(timer);
   }, [visible]);
 
-  const refresh = useCallback((afterSubmission = false): Promise<void> => {
+  const refresh = useCallback(function refreshComments(afterSubmission = false): Promise<void> {
     if (loadingRequest.current) {
-      return afterSubmission ? loadingRequest.current.then(() => refresh()) : loadingRequest.current;
+      return afterSubmission ? loadingRequest.current.then(() => refreshComments()) : loadingRequest.current;
     }
     const revision = readRevision.current;
     setLoading(true); setLoadError("");
@@ -101,7 +103,7 @@ export function CommentsSheet({ newsId, visible, initialSnapshot, theme, onClose
       void Promise.all([getToken(), getUser()]).then(([token, user]) => {
         if (!active || request !== revision || !mounted.current) return;
         const role = String(user?.role || "").toLowerCase();
-        setSession({ ready: true, authenticated: !!token, canReport: !adapter && !!token && !["admin", "administrator", "moderator"].includes(role) });
+        setSession({ ready: true, authenticated: !!token, canReport: !!token && (!adapter || !!adapter.report) && !["admin", "administrator", "moderator"].includes(role) });
         if (token) { setQuotaOpen(false); setRemainingQuota(null); }
       }).catch(() => { if (active && request === revision && mounted.current) setSession({ ready: true, authenticated: false, canReport: false }); });
     };
@@ -114,8 +116,7 @@ export function CommentsSheet({ newsId, visible, initialSnapshot, theme, onClose
     input.current?.focus();
   }, []);
   const report = useCallback((comment: PublicNewsComment) => {
-    setReportTarget(comment); setReportReason(""); setError("");
-    input.current?.focus();
+    Keyboard.dismiss(); setReportTarget(comment); setReportReason(""); setReportCategory(""); setError(""); setInputError("");
   }, []);
   const login = () => {
     Keyboard.dismiss(); setQuotaOpen(false); onClose();
@@ -123,14 +124,15 @@ export function CommentsSheet({ newsId, visible, initialSnapshot, theme, onClose
   };
 
   const submit = async () => {
-    if (sending.current || !session.ready || (reportTarget && !session.authenticated) || !text.trim()) return;
+    if (sending.current || !session.ready || (reportTarget && !session.authenticated) || (reportTarget ? !reportCategory : !text.trim())) return;
     const content = text.trim();
-    if (content.length > (reportTarget ? 500 : 1000)) { setInputError("Teks melebihi had aksara."); return; }
+    if (content.length > (reportTarget ? 450 : 1000)) { setInputError("Teks melebihi had aksara."); return; }
     sending.current = true; setBusy(true); setInputError(""); setError(""); setNotice("");
     try {
       if (reportTarget) {
         const targetId = reportTarget.id;
-        await reportNewsComment(targetId, content);
+        if (adapter?.report) await adapter.report(targetId, content, newsId, reportCategory);
+        else await reportNewsComment(targetId, content, reportCategory);
         if (!mounted.current) return;
         setSnapshot(previous => ({ ...previous, comments: previous.comments.map(comment => comment.id === targetId ? { ...comment, reported_by_user: true } : comment) }));
         setReportTarget(null); setReportReason(""); setNotice("Laporan diterima. Terima kasih.");
@@ -159,7 +161,7 @@ export function CommentsSheet({ newsId, visible, initialSnapshot, theme, onClose
       if (mounted.current) setBusy(false);
     }
   };
-  const canSend = session.ready && (!reportTarget || session.authenticated) && !busy && !!text.trim();
+  const canSend = session.ready && (!reportTarget || session.authenticated) && !busy && (reportTarget ? !!reportCategory : !!text.trim());
 
   return <><BottomSheet isOpen={visible} onOpenChange={open => { if (!open) dismiss(); }}>
     <BottomSheet.Portal unstable_accessibilityContainerViewIsModal>
@@ -171,9 +173,16 @@ export function CommentsSheet({ newsId, visible, initialSnapshot, theme, onClose
         contentContainerClassName="h-full p-0" contentContainerProps={{ accessibilityViewIsModal: true, onAccessibilityEscape: dismiss }}
         style={{ maxWidth: Design.contentWidth, width: "100%", alignSelf: "center" }}>
             <View style={styles.header}>
-              <View style={styles.titleRow}><BottomSheet.Title style={[styles.title, { color: theme.text }]}>Komen</BottomSheet.Title><Text accessibilityLiveRegion="polite" style={{ color: theme.secondary, fontSize: 12 }}>{snapshot.total}</Text></View>
+              <View style={styles.titleRow}><BottomSheet.Title style={[styles.title, { color: theme.text }]}>{reportTarget ? "Laporkan komentar" : "Komen"}</BottomSheet.Title><Text accessibilityLiveRegion="polite" style={{ color: theme.secondary, fontSize: 12 }}>{snapshot.total}</Text></View>
               <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel="Tutup komen" onPress={dismiss} style={[styles.close, { backgroundColor: theme.accent }]}><Text style={{ color: theme.text, fontSize: 12, fontWeight: "600" }}>Tutup</Text></Button>
             </View>
+          {reportTarget ? <CommentReportForm content={reportTarget.content || reportTarget.body || ''} author={commenterName(reportTarget)} category={reportCategory}
+            onCategory={setReportCategory} theme={theme} busy={busy} error={inputError || error} onSubmit={() => { void submit(); }}
+            onCancel={() => { setReportTarget(null); setError(''); setInputError(''); }}
+            input={<CommentInput accessibilityLabel="Penjelasan laporan" multiline maxLength={450} value={reportReason} editable={!busy}
+              onChangeText={setReportReason} placeholder="Jelaskan konteks laporan (opsional)..." placeholderTextColor={theme.secondary}
+              style={[styles.input, { color: theme.text, backgroundColor: theme.accent, minHeight: 100, textAlignVertical: 'top', borderRadius: 12 }]}/>}
+          /> : <>
           <BottomSheetFlatList data={rows} keyExtractor={row => row.comment.id} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"
             style={styles.list} showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContent}
             renderItem={({ item }) => <CommentRow comment={item.comment} depth={item.depth} theme={theme} now={now} canReport={session.canReport} disabled={busy} onReply={reply} onReport={report}/>}
@@ -196,15 +205,14 @@ export function CommentsSheet({ newsId, visible, initialSnapshot, theme, onClose
           <View style={[styles.footer, { borderTopColor: theme.border, paddingBottom: keyboardOpen ? 12 : Math.max(12, insets.bottom) }]}>
             {!!notice && <View style={styles.notice}><Text accessibilityLiveRegion="polite" style={{ color: theme.primary, fontSize: 12, lineHeight: 18, flex: 1 }}>{notice}</Text><Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel="Tutup mesej" onPress={() => setNotice("")} style={styles.dismissNotice}><Ionicons name="close" size={16} color={theme.secondary}/></Button></View>}
             <FormError message={error}/>
-            {reportTarget ? <View style={styles.context}><Text style={{ color: theme.secondary, fontSize: 12, flex: 1 }}>Laporkan komen {commenterName(reportTarget)}</Text><Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel="Batal laporan" isDisabled={busy} onPress={() => { setReportTarget(null); setError(""); }} style={styles.dismissNotice}><Ionicons name="close" size={17} color={theme.secondary}/></Button></View>
-              : replyTarget && <View style={styles.context}><Text style={{ color: theme.primary, fontSize: 12, flex: 1 }}>Membalas {commenterName(replyTarget)}</Text><Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel="Batal balasan" isDisabled={busy} onPress={() => { setReplyTarget(null); setError(""); }} style={styles.dismissNotice}><Ionicons name="close" size={17} color={theme.secondary}/></Button></View>}
+            {replyTarget && <View style={styles.context}><Text style={{ color: theme.primary, fontSize: 12, flex: 1 }}>Membalas {commenterName(replyTarget)}</Text><Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel="Batal balasan" isDisabled={busy} onPress={() => { setReplyTarget(null); setError(""); }} style={styles.dismissNotice}><Ionicons name="close" size={17} color={theme.secondary}/></Button></View>}
             <View style={styles.composer}>
-                <CommentInput ref={input} accessibilityLabel={reportTarget ? "Sebab laporan" : replyTarget ? "Tulis balasan" : "Tulis komen"} multiline
-                  placeholder={reportTarget ? "Sebab laporan..." : "Tulis komen..."} placeholderTextColor={theme.secondary}
-                  value={text} editable={!busy} maxLength={reportTarget ? 500 : 1000}
-                  onChangeText={value => { setError(""); setInputError(value.trim().length > (reportTarget ? 500 : 1000) ? "Teks melebihi had aksara." : ""); if (reportTarget) setReportReason(value); else setDrafts(previous => ({ ...previous, [draftKey]: value })); }}
+                <CommentInput ref={input} accessibilityLabel={replyTarget ? "Tulis balasan" : "Tulis komen"} multiline
+                  placeholder={"Tulis komen..."} placeholderTextColor={theme.secondary}
+                  value={text} editable={!busy} maxLength={1000}
+                  onChangeText={value => { setError(""); setInputError(value.trim().length > (reportTarget ? 500 : 1000) ? "Teks melebihi had aksara." : ""); setDrafts(previous => ({ ...previous, [draftKey]: value })); }}
                   style={[styles.input, { backgroundColor: theme.accent, color: theme.text, ...(inputError ? { borderColor: theme.error, borderWidth: 1 } : {}) }]}/>
-                <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel={reportTarget ? "Hantar laporan" : replyTarget ? "Hantar balasan" : "Hantar komen"} accessibilityState={{ disabled: !canSend, busy }} isDisabled={!canSend} onPress={submit}
+                <Button variant="ghost" className="h-auto min-h-0 min-w-0 rounded-none p-0" accessibilityRole="button" accessibilityLabel={replyTarget ? "Hantar balasan" : "Hantar komen"} accessibilityState={{ disabled: !canSend, busy }} isDisabled={!canSend} onPress={submit}
                   style={[styles.send, { backgroundColor: theme.primary, opacity: canSend || busy ? 1 : 0.45 }]}>
                   {busy ? <ActivityIndicator size="small" color={theme.background}/> : <Ionicons name="arrow-up" size={21} color={theme.background}/>}
                 </Button>
@@ -212,6 +220,7 @@ export function CommentsSheet({ newsId, visible, initialSnapshot, theme, onClose
             <FormError inline message={inputError}/>
             {!session.authenticated && remainingQuota !== null && <Text style={{ color: theme.secondary, fontSize: 11, marginTop: 8 }}>Baki komen hari ini: {remainingQuota}</Text>}
           </View>
+          </>}
       </BottomSheet.Content>
     </BottomSheet.Portal>
   </BottomSheet>

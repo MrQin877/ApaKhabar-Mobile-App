@@ -46,7 +46,7 @@ export const postCommentReply = async (commentId: string, content: string, newsI
   invalidateNewsFeed();
   return result;
 };
-export const reportNewsComment = async (commentId: string, reason: string) => {
-  const response = await api.post(`/comments/${commentId}/report`, { reason });
+export const reportNewsComment = async (commentId: string, reason: string, category?: string) => {
+  const response = await api.post(`/comments/${commentId}/report`, category ? { category, details: reason } : { reason });
   return response.data;
 };

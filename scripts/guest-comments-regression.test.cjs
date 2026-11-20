@@ -105,7 +105,7 @@ function renderer() {
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
     '@/constants/theme': { Design: { contentWidth: 680 } }, '@/services/authService': { getToken: async () => sessionToken, getUser: async () => null },
     '@/services/sessionEvents': events, '@/services/newsService': news, '@/utils/newsComments': helpers,
-    './CommentRow': { CommentRow: 'Row' }, './GuestCommentLimitDialog': { GuestCommentLimitDialog: Dialog },
+    './CommentReportForm': { CommentReportForm: 'ReportForm' }, './CommentRow': { CommentRow: 'Row' }, './GuestCommentLimitDialog': { GuestCommentLimitDialog: Dialog },
   }, { setInterval: () => 0, clearInterval() {} });
   let closed = 0;
   const props = { newsId: '42', visible: true, initialSnapshot: snapshots, theme: themes.light, onClose: () => { closed++; }, onChange() {} };

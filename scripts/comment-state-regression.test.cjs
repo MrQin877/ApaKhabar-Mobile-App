@@ -50,7 +50,7 @@ function renderer() {
       'expo-router': { useRouter: () => ({ push() {} }) }, 'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
       '@/constants/theme': { Design: { contentWidth: 680 } }, '@/services/authService': { getToken: async () => authenticated ? 'token' : null, getUser: async () => null },
       '@/services/sessionEvents': { subscribeSession: () => () => {} }, '@/services/newsService': news, '@/utils/newsComments': helpers,
-      './CommentRow': { CommentRow: 'Row' }, './GuestCommentLimitDialog': { GuestCommentLimitDialog: 'Dialog' },
+      './CommentReportForm': { CommentReportForm: 'ReportForm' }, './CommentRow': { CommentRow: 'Row' }, './GuestCommentLimitDialog': { GuestCommentLimitDialog: 'Dialog' },
     }, { setInterval: () => 0, clearInterval() {} });
     const props = { newsId: '17', visible: true, initialSnapshot: initial, theme: {}, onClose() {}, onChange: snapshot => changes.push(snapshot) };
     const render = () => r.render(() => sheet.CommentsSheet(props));

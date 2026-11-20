@@ -13,7 +13,7 @@ const mocks = {
     if (url === '/shorts/8/comments') return { data: { count: 12, comments: { data: [{ id: '1', replies_count: 1 }], next_page_url: 'next' } } };
     if (url.endsWith('/replies')) return { data: { data: [{ id: '2', parent_id: '1' }], next_page_url: null } };
     throw Error(url);
-  } } },
+  }, post: async (url, body) => { requests.push([url, body]); return { data: { message: 'Laporan diterima.' } }; } } },
   './guestCommentService': { postShortComment() {}, postShortCommentReply() {} },
   './authService': { getToken: async () => null },
   './sessionEvents': { subscribeSession() {} },
@@ -35,5 +35,8 @@ vm.runInNewContext(ts.transpileModule(fs.readFileSync('services/shortsService.ts
   assert.equal(snapshot.total, 12);
   assert.equal(snapshot.nextPage, 2, 'Additional comment pages are requested by the reader');
   assert.equal(snapshot.comments.length, 2);
+  await exportsObject.shortsCommentAdapter.report('12', 'Komentar menghina warga.', '8');
+  assert.equal(requests.at(-1)[0], '/shorts/8/comments/12/report');
+  assert.equal(requests.at(-1)[1].reason, 'Komentar menghina warga.');
   console.log('Shorts service regression tests passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

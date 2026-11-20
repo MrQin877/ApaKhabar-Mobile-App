@@ -54,6 +54,7 @@ export async function shortComments(id: string, startPage = 1): Promise<NewsComm
   return { comments, total };
 }
 export const shortsCommentAdapter = {
+  report: async (commentId: string, reason: string, id: string, category?: string) => (await api.post(`/shorts/${id}/comments/${commentId}/report`, category ? { category, details: reason } : { reason })).data,
   load: shortComments,
   more: shortComments,
   post: postShortComment,
