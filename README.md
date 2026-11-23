@@ -2,6 +2,57 @@
 
 ApaKhabar Mobile is built using **Expo and React Native**. It connects to the Laravel backend (Repo A) to display news, notifications, comments, and user information.
 
+## Source-code handover: run these commands in Repo C
+
+This README belongs to **Repo C (mobile)**. The website/API is **Repo A**, and the Python AI service is **Repo B**. Follow Repo A's root README to configure and start Docker first.
+
+| Repository | Dependency command on the recipient's computer | Startup |
+| --- | --- | --- |
+| Repo A: website, using Docker | No host `npm install` or `composer install`; Docker installs dependencies and builds assets. | Run `deployment/start-local.ps1 -Build` through PowerShell in Repo A on first setup. |
+| Repo B: AI service, using Repo A's Docker stack | No host npm or pip command. | Started by Repo A; retain source at the configured build path. |
+| Repo C: this mobile repository | `npm ci` | `npx expo start --lan --clear` |
+
+### First installation (PowerShell, mobile repository root)
+
+```powershell
+cd "C:\Testxampp\htdocs\ApaKhabar-Mobile-App"
+npm ci
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
+npx expo start --lan --clear
+```
+
+Replace the example folder with your actual mobile source folder. Use the root containing this README, `package.json`, and `package-lock.json`, not the nested historical `apakhabar-mobile` project.
+
+**Yes, mobile dependencies must be installed.** `npm ci` is preferred for handed-over source because it uses the supplied lockfile. `npm install` is an alternative, but can update that lockfile; do not run both consecutively. Repeat `npm ci` after dependency/lockfile updates, not on every startup.
+
+Keep `EXPO_PUBLIC_API_BASE_URL=` blank for local LAN detection. Connect the phone and computer to the same Wi-Fi and keep Repo A running on port 8088. Open the QR code in an Expo Go version compatible with this project's SDK, or use a development build.
+
+### Every subsequent session
+
+Start Docker Desktop, then in **Repo A**:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\deployment\start-local.ps1
+```
+
+In a separate terminal in **Repo C**:
+
+```powershell
+npx expo start --lan --clear
+```
+
+There is no separate Repo B command for Docker. Stop Expo with `Ctrl+C`. From Repo A, stop backend containers without removing data:
+
+```powershell
+docker compose --env-file deployment/.env -f deployment/compose.yaml stop
+```
+
+### Public mobile release
+
+Set `EXPO_PUBLIC_API_BASE_URL=https://YOUR_DOMAIN/api` before building a deployed app. All `EXPO_PUBLIC_*` values are public; do not put service secrets here. Restart Expo after local changes and rebuild installed releases after API configuration changes.
+
+`expo start` is development testing, not an APK/IPA build. The supplied root has no `eas.json`; configure release profiles, Android/iOS identifiers, Expo project ownership/access, and signing credentials before a standalone release.
+
 ## 1. Requirements
 
 Before starting, make sure you have:
@@ -13,7 +64,7 @@ Before starting, make sure you have:
 - Expo Go (if compatible) or an Expo development build
 - Phone and laptop connected to the same Wi-Fi
 
-For installation instructions, refer to **`SETUP_REQUIREMENT.txt`**.
+For backend installation commands, use **Repo A's root `README.md`**, then `deployment/README.md` for detailed Docker troubleshooting.
 
 ## 2. First-Time Setup
 
@@ -23,7 +74,7 @@ Open the Repo C folder in VS Code:
 
 ```powershell
 cd "C:\Testxampp\htdocs\ApaKhabar-Mobile-App"
-npm install
+npm ci
 ```
 
 ### Step 2 — Set Up Docker (Repo A)
